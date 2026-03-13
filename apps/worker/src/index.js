@@ -119,14 +119,34 @@ async function deleteTemplate(env, id) {
   await env.DB.prepare('DELETE FROM prompt_templates WHERE id = ?').bind(id).run();
 }
 
-async function listTextAssets(env, limit = 20) {
+async function listTextAssets(env, options = {}) {
   if (!env.DB) return [];
-  const result = await env.DB.prepare(`
+  const limit = Number(options.limit || 20);
+  const q = String(options.q || '').trim();
+  const source = String(options.source || '').trim();
+
+  let sql = `
     SELECT id, created_at, name, content, source
     FROM text_assets
-    ORDER BY id DESC
-    LIMIT ?
-  `).bind(limit).all();
+    WHERE 1 = 1
+  `;
+  const binds = [];
+
+  if (q) {
+    sql += ' AND (name LIKE ? OR content LIKE ? OR source LIKE ?)';
+    const like = `%${q}%`;
+    binds.push(like, like, like);
+  }
+
+  if (source) {
+    sql += ' AND source = ?';
+    binds.push(source);
+  }
+
+  sql += ' ORDER BY id DESC LIMIT ?';
+  binds.push(limit);
+
+  const result = await env.DB.prepare(sql).bind(...binds).all();
   return result.results || [];
 }
 
@@ -146,6 +166,15 @@ async function getTextAsset(env, id) {
     FROM text_assets
     WHERE id = ?
   `).bind(id).first();
+}
+
+async function updateTemplate(env, id, title, content, category, isFavorite) {
+  if (!env.DB) return;
+  await env.DB.prepare(`
+    UPDATE prompt_templates
+    SET title = ?, content = ?, category = ?, is_favorite = ?
+    WHERE id = ?
+  `).bind(title, content, category, isFavorite ? 1 : 0, id).run();
 }
 
 async function getDashboard(env) {
@@ -460,7 +489,11 @@ export default {
       }
 
       if (url.pathname === '/api/assets' && request.method === 'GET') {
-        const rows = await listTextAssets(env, Number(url.searchParams.get('limit') || 20));
+        const rows = await listTextAssets(env, {
+          limit: Number(url.searchParams.get('limit') || 20),
+          q: url.searchParams.get('q') || '',
+          source: url.searchParams.get('source') || ''
+        });
         return json({ ok: true, items: rows }, 200, corsHeaders(origin));
       }
 
@@ -496,7 +529,13 @@ export default {
         const body = await request.json();
         const category = String(body?.category || '未分类').trim() || '未分类';
         const isFavorite = Boolean(body?.is_favorite);
-        await updateTemplateMeta(env, id, category, isFavorite);
+        const title = typeof body?.title === 'string' ? body.title.trim() : '';
+        const content = typeof body?.content === 'string' ? body.content.trim() : '';
+        if (title || content) {
+          await updateTemplate(env, id, title || '未命名模板', content || '', category, isFavorite);
+        } else {
+          await updateTemplateMeta(env, id, category, isFavorite);
+        }
         return json({ ok: true }, 200, corsHeaders(origin));
       }
 

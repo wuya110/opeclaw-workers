@@ -72,3 +72,5 @@ button.small { padding: 8px 12px; font-size: 12px; }
 .template-meta { color: var(--muted); font-size: 12px; }
 #templateSearch, #historySearch { min-width: 240px; }
 #templateCategoryFilter, #templateFavoriteFilter, #historyFallbackFilter { min-width: 120px; }
+
+#assetSearch, #assetSourceFilter { min-width: 180px; }

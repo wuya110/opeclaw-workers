@@ -3,6 +3,8 @@ const saveGatewayBtn = document.querySelector('#saveGatewayBtn');
 const gatewayInfoBox = document.querySelector('#gatewayInfoBox');
 const statusBox = document.querySelector('#statusBox');
 const assetNameInput = document.querySelector('#assetName');
+const assetSearchInput = document.querySelector('#assetSearch');
+const assetSourceFilter = document.querySelector('#assetSourceFilter');
 const assetsBox = document.querySelector('#assetsBox');
 const assetDetailBox = document.querySelector('#assetDetailBox');
 const saveAnswerAssetBtn = document.querySelector('#saveAnswerAssetBtn');
@@ -151,7 +153,9 @@ async function showAssetDetail(id) {
 async function loadAssets() {
   assetsBox.textContent = '加载中...';
   try {
-    const result = await request('/api/assets?limit=20');
+    const q = encodeURIComponent(assetSearchInput.value.trim());
+    const source = encodeURIComponent(assetSourceFilter.value);
+    const result = await request(`/api/assets?limit=20&q=${q}&source=${source}`);
     const items = result.data?.items || [];
     if (!items.length) {
       assetsBox.textContent = '暂无资产';
@@ -284,6 +288,7 @@ async function loadTemplates() {
         <div class="history-buttons">
           <button class="secondary small" data-template-type="custom" data-template-content="${escapeHtml(item.content)}">使用</button>
           <button class="secondary small" data-template-favorite-id="${item.id}" data-template-category="${escapeHtml(item.category || '未分类')}" data-template-next-favorite="${Number(item.is_favorite) === 1 ? 0 : 1}">${Number(item.is_favorite) === 1 ? '取消收藏' : '收藏'}</button>
+          <button class="secondary small" data-edit-template='${JSON.stringify(item).replaceAll("'", '&#39;')}'>编辑</button>
           <button class="secondary small" data-delete-template="${item.id}">删除</button>
         </div>
       </div>
@@ -312,6 +317,29 @@ async function loadTemplates() {
   templateBox.querySelectorAll('[data-delete-template]').forEach((button) => {
     button.addEventListener('click', async () => {
       await request(`/api/templates/${button.getAttribute('data-delete-template')}`, { method: 'DELETE' });
+      await loadTemplates();
+    });
+  });
+
+  templateBox.querySelectorAll('[data-edit-template]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const item = JSON.parse(button.getAttribute('data-edit-template'));
+      const title = window.prompt('模板标题', item.title || '');
+      if (title === null) return;
+      const category = window.prompt('模板分类', item.category || '未分类');
+      if (category === null) return;
+      const content = window.prompt('模板内容', item.content || '');
+      if (content === null) return;
+      await request(`/api/templates/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          content,
+          category,
+          is_favorite: Number(item.is_favorite) === 1
+        })
+      });
       await loadTemplates();
     });
   });
@@ -473,6 +501,8 @@ historySearchInput.addEventListener('keydown', (event) => { if (event.key === 'E
 historyFallbackFilter.addEventListener('change', loadHistory);
 loadAssetsBtn.addEventListener('click', loadAssets);
 saveAnswerAssetBtn.addEventListener('click', saveCurrentAnswerAsAsset);
+assetSearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadAssets(); });
+assetSourceFilter.addEventListener('change', loadAssets);
 templateSearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadTemplates(); });
 templateCategoryFilter.addEventListener('change', loadTemplates);
 templateFavoriteFilter.addEventListener('change', loadTemplates);

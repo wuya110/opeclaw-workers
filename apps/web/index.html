@@ -35,8 +35,15 @@
             <button id="loadAssetsBtn">刷新资产</button>
           </div>
         </div>
-        <div class="asset-form">
+        <div class="inline-actions asset-form">
           <input id="assetName" placeholder="资产名称，例如：今日结论" />
+          <input id="assetSearch" placeholder="搜索资产名称 / 内容 / 来源" />
+          <select id="assetSourceFilter">
+            <option value="">全部来源</option>
+            <option value="answer-box">回答保存</option>
+            <option value="history-archive">历史归档</option>
+            <option value="smoke-test">测试数据</option>
+          </select>
         </div>
         <div id="assetsBox" class="history-box">等待加载...</div>
         <div id="assetDetailBox" class="asset-detail-box">点击某条资产查看详情...</div>
