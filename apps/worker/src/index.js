@@ -79,7 +79,7 @@ async function handleChat(request, env, origin) {
     }
   };
 
-  const upstream = await fetch(`https://api-inference.huggingface.co/models/${encodeURIComponent(model)}`, {
+  const upstream = await fetch(`https://router.huggingface.co/hf-inference/models/${encodeURIComponent(model)}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${env.HF_TOKEN}`,
