@@ -73,7 +73,7 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-window.renderResultSummary = function renderResultSummary(data = {}) {
+const renderResultSummary = window.renderResultSummary = function renderResultSummary(data = {}) {
   const answer = (data.answer || '').trim();
   const fallback = data.fallbackUsed ? '发生回退' : '主模型直出';
   const model = data.model || 'unknown';
