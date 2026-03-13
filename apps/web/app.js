@@ -35,6 +35,7 @@ const templateSearchInput = document.querySelector('#templateSearch');
 const templateCategoryFilter = document.querySelector('#templateCategoryFilter');
 const templateFavoriteFilter = document.querySelector('#templateFavoriteFilter');
 const dashboardBox = document.querySelector('#dashboardBox');
+const heroMetrics = document.querySelector('#heroMetrics');
 const workbenchTagFilter = document.querySelector('#workbenchTagFilter');
 const loadWorkbenchBtn = document.querySelector('#loadWorkbenchBtn');
 const workbenchBox = document.querySelector('#workbenchBox');
@@ -265,6 +266,12 @@ async function loadDashboard() {
   try {
     const result = await request('/api/dashboard');
     const data = result.data || {};
+    heroMetrics.innerHTML = `
+      <div class="metric-card"><strong>${escapeHtml(data.storage?.experiments ?? 0)}</strong><span>实验记录</span></div>
+      <div class="metric-card"><strong>${escapeHtml(data.storage?.templates ?? 0)}</strong><span>模板</span></div>
+      <div class="metric-card"><strong>${escapeHtml(data.storage?.assets ?? 0)}</strong><span>资产</span></div>
+      <div class="metric-card"><strong>${data.github?.enabled ? 'OK' : 'CHECK'}</strong><span>GitHub</span></div>
+    `;
     dashboardBox.innerHTML = `
       <article class="dashboard-card">
         <h3>Cloudflare</h3>
@@ -295,6 +302,7 @@ async function loadDashboard() {
       </article>
     `;
   } catch (error) {
+    heroMetrics.textContent = `概览加载失败：${error.message}`;
     dashboardBox.textContent = `加载失败：${error.message}`;
   }
 }

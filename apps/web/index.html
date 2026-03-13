@@ -11,6 +11,23 @@
       <h1>院生 AI 实验站</h1>
       <p class="sub">Cloudflare × GitHub × Hugging Face 统一实验入口</p>
 
+      <section class="card hero-card">
+        <div class="hero-grid">
+          <div>
+            <h2>工作台总览</h2>
+            <p class="sub">先看联动视图与状态，再决定是跑实验、找模板，还是整理资产。</p>
+            <div class="quick-nav" id="quickNav">
+              <a href="#workbenchSection">联动视图</a>
+              <a href="#experimentSection">文本实验</a>
+              <a href="#templateSection">模板库</a>
+              <a href="#historySection">实验记录</a>
+              <a href="#assetSection">资产区</a>
+            </div>
+          </div>
+          <div class="hero-metrics" id="heroMetrics">等待加载概览...</div>
+        </div>
+      </section>
+
       <section class="card">
         <h2>网关配置</h2>
         <label for="gatewayBase">网关地址</label>
@@ -19,7 +36,7 @@
         <pre id="gatewayInfoBox">默认使用 https://api.yjs.de5.net</pre>
       </section>
 
-      <section class="card">
+      <section class="card" id="statusSection">
         <div class="history-head">
           <h2>状态总面板</h2>
           <button id="loadDashboardBtn">刷新状态</button>
@@ -27,7 +44,7 @@
         <div id="dashboardBox" class="dashboard-grid">等待加载...</div>
       </section>
 
-      <section class="card">
+      <section class="card" id="assetSection">
         <div class="history-head">
           <h2>资产区</h2>
           <div class="inline-actions">
@@ -59,7 +76,7 @@
       </section>
 
 
-      <section class="card">
+      <section class="card" id="workbenchSection">
         <div class="history-head">
           <h2>标签联动视图</h2>
           <div class="inline-actions">
@@ -84,7 +101,7 @@
         <pre id="statusBox">等待检查...</pre>
       </section>
 
-      <section class="card">
+      <section class="card" id="templateSection">
         <div class="history-head">
           <h2>Prompt 模板</h2>
           <div class="inline-actions">
@@ -101,7 +118,7 @@
         <div id="templateBox" class="template-grid"></div>
       </section>
 
-      <section class="card">
+      <section class="card" id="experimentSection">
         <h2>文本实验</h2>
         <label for="model">选择模型</label>
         <select id="model">
@@ -153,7 +170,7 @@
         </details>
       </section>
 
-      <section class="card">
+      <section class="card" id="historySection">
         <div class="history-head">
           <h2>实验记录</h2>
           <div class="inline-actions">

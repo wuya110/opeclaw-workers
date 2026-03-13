@@ -80,3 +80,13 @@ button.small { padding: 8px 12px; font-size: 12px; }
 .mini-row { display: grid; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .mini-empty { color: var(--muted); }
 #assetTagFilter, #workbenchTagFilter { min-width: 120px; }
+
+
+.hero-card { overflow: hidden; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+.quick-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.quick-nav a { color: var(--text); text-decoration: none; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: #0d1427; }
+.hero-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.metric-card { border: 1px solid var(--line); border-radius: 14px; background: #0d1427; padding: 14px; display: grid; gap: 6px; }
+.metric-card strong { font-size: 24px; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
