@@ -57,3 +57,7 @@ button.small { padding: 8px 12px; font-size: 12px; }
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .dashboard-card { border: 1px solid var(--line); border-radius: 14px; background: #0d1427; padding: 14px; display: grid; gap: 8px; }
 .dashboard-card h3 { margin: 0 0 6px; }
+
+.result-summary { margin-top: 12px; }
+.result-card { border: 1px solid var(--line); border-radius: 14px; background: #0d1427; padding: 14px; }
+.result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }

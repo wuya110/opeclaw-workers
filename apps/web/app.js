@@ -4,6 +4,7 @@ const gatewayInfoBox = document.querySelector('#gatewayInfoBox');
 const statusBox = document.querySelector('#statusBox');
 const resultBox = document.querySelector('#resultBox');
 const answerBox = document.querySelector('#answerBox');
+const resultSummaryBox = document.querySelector('#resultSummaryBox');
 const metaTag = document.querySelector('#metaTag');
 const checkBtn = document.querySelector('#checkBtn');
 const loadDashboardBtn = document.querySelector('#loadDashboardBtn');
@@ -184,6 +185,7 @@ async function loadHistory() {
         <div class="history-buttons">
           <button class="secondary small" data-rerun='${JSON.stringify({ prompt: item.prompt, model: item.final_model }).replaceAll("'", '&#39;')}'>一键重跑</button>
           <button class="secondary small" data-reuse-prompt='${escapeHtml(item.prompt)}'>载入 Prompt</button>
+          <button class="secondary small" data-archive-history='${JSON.stringify(item).replaceAll("'", '&#39;')}'>归档到资产区</button>
         </div>
       </article>
     `).join('');
@@ -203,6 +205,13 @@ async function loadHistory() {
         promptInput.focus();
       });
     });
+
+    historyBox.querySelectorAll('[data-archive-history]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const payload = JSON.parse(button.getAttribute('data-archive-history'));
+        await archiveHistoryItemAsAsset(payload);
+      });
+    });
   } catch (error) {
     historyBox.textContent = `加载失败：${error.message}`;
   }
@@ -212,12 +221,14 @@ async function runPrompt() {
   const prompt = promptInput.value.trim();
   if (!prompt) {
     answerBox.textContent = '先输入 prompt';
+    resultSummaryBox.textContent = '先输入 prompt';
     resultBox.textContent = '先输入 prompt';
     metaTag.textContent = '缺少输入';
     metaTag.className = 'meta-tag warn';
     return;
   }
   answerBox.textContent = '执行中...';
+  resultSummaryBox.textContent = '执行中...';
   resultBox.textContent = '执行中...';
   metaTag.textContent = '请求中';
   metaTag.className = 'meta-tag';
@@ -235,6 +246,7 @@ async function runPrompt() {
     });
     const data = result.data || {};
     answerBox.textContent = data.answer || '模型没有返回可展示文本';
+    renderResultSummary(data);
     if (data.fallbackUsed) {
       metaTag.textContent = `已回退：${data.primaryModel} → ${data.model}`;
       metaTag.className = 'meta-tag warn';
@@ -246,6 +258,7 @@ async function runPrompt() {
     await loadHistory();
   } catch (error) {
     answerBox.textContent = `调用失败：${error.message}`;
+    resultSummaryBox.textContent = `调用失败：${error.message}`;
     resultBox.textContent = `调用失败：${error.message}`;
     metaTag.textContent = '请求失败';
     metaTag.className = 'meta-tag danger';
