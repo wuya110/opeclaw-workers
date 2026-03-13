@@ -122,3 +122,9 @@ wrangler secret put GITHUB_TOKEN
 
 - 前端：`https://lab.yjs.de5.net`
 - API：`https://api.yjs.de5.net`
+
+
+## 部署备注
+- Worker 部署使用：`wrangler.toml`
+- Pages 部署使用：`wrangler.pages.toml`
+- 推荐命令：`wrangler pages deploy apps/web --project-name opeclaw-workers-web --config wrangler.pages.toml`
