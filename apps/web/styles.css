@@ -53,3 +53,7 @@ button.small { padding: 8px 12px; font-size: 12px; }
 
 .template-manage { display: grid; gap: 10px; grid-column: 1 / -1; }
 .template-custom { display: flex; flex-direction: column; justify-content: space-between; }
+
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.dashboard-card { border: 1px solid var(--line); border-radius: 14px; background: #0d1427; padding: 14px; display: grid; gap: 8px; }
+.dashboard-card h3 { margin: 0 0 6px; }

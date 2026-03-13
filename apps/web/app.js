@@ -6,6 +6,7 @@ const resultBox = document.querySelector('#resultBox');
 const answerBox = document.querySelector('#answerBox');
 const metaTag = document.querySelector('#metaTag');
 const checkBtn = document.querySelector('#checkBtn');
+const loadDashboardBtn = document.querySelector('#loadDashboardBtn');
 const runBtn = document.querySelector('#runBtn');
 const copyAnswerBtn = document.querySelector('#copyAnswerBtn');
 const clearPromptBtn = document.querySelector('#clearPromptBtn');
@@ -18,6 +19,7 @@ const loadHistoryBtn = document.querySelector('#loadHistoryBtn');
 const historyLimitInput = document.querySelector('#historyLimit');
 const historyBox = document.querySelector('#historyBox');
 const templateBox = document.querySelector('#templateBox');
+const dashboardBox = document.querySelector('#dashboardBox');
 
 const storageKey = 'opeclaw.gatewayBase';
 const defaultGateway = 'https://api.yjs.de5.net';
@@ -50,6 +52,45 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+
+async function loadDashboard() {
+  dashboardBox.textContent = '加载中...';
+  try {
+    const result = await request('/api/dashboard');
+    const data = result.data || {};
+    dashboardBox.innerHTML = `
+      <article class="dashboard-card">
+        <h3>Cloudflare</h3>
+        <div>前端：${escapeHtml(data.cloudflare?.web || '')}</div>
+        <div>网关：${escapeHtml(data.cloudflare?.gateway || '')}</div>
+        <div>D1：${data.cloudflare?.d1 ? '已连接' : '未连接'}</div>
+      </article>
+      <article class="dashboard-card">
+        <h3>GitHub</h3>
+        <div>可用：${data.github?.enabled ? '是' : '否'}</div>
+        <div>账号：${escapeHtml(data.github?.login || '')}</div>
+        <div>名称：${escapeHtml(data.github?.name || '')}</div>
+        <div>公开仓库：${escapeHtml(data.github?.public_repos ?? '')}</div>
+      </article>
+      <article class="dashboard-card">
+        <h3>Hugging Face</h3>
+        <div>可用：${data.huggingface?.enabled ? '是' : '否'}</div>
+        <div>账号：${escapeHtml(data.huggingface?.name || '')}</div>
+        <div>类型：${escapeHtml(data.huggingface?.type || '')}</div>
+        <div>默认模型：${escapeHtml(data.huggingface?.defaultModel || '')}</div>
+        <div>回退模型：${escapeHtml(data.huggingface?.fallbackModel || '')}</div>
+      </article>
+      <article class="dashboard-card">
+        <h3>存储</h3>
+        <div>实验记录：${escapeHtml(data.storage?.experiments ?? '')}</div>
+        <div>自定义模板：${escapeHtml(data.storage?.templates ?? '')}</div>
+      </article>
+    `;
+  } catch (error) {
+    dashboardBox.textContent = `加载失败：${error.message}`;
+  }
 }
 
 async function loadTemplates() {
@@ -215,6 +256,8 @@ saveGatewayBtn.addEventListener('click', () => {
   localStorage.setItem(storageKey, getGatewayBase());
   gatewayInfoBox.textContent = `当前网关：${getGatewayBase()}`;
 });
+loadDashboardBtn.addEventListener('click', loadDashboard);
+
 checkBtn.addEventListener('click', async () => {
   statusBox.textContent = '检查中...';
   try {
@@ -235,5 +278,6 @@ copyAnswerBtn.addEventListener('click', async () => {
 });
 clearPromptBtn.addEventListener('click', () => { promptInput.value = ''; promptInput.focus(); });
 
+loadDashboard();
 loadTemplates();
 loadHistory();

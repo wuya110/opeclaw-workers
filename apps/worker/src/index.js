@@ -110,6 +110,77 @@ async function deleteTemplate(env, id) {
   await env.DB.prepare('DELETE FROM prompt_templates WHERE id = ?').bind(id).run();
 }
 
+async function getDashboard(env) {
+  const cloudflare = {
+    gateway: 'https://api.yjs.de5.net',
+    web: 'https://lab.yjs.de5.net',
+    d1: Boolean(env.DB)
+  };
+
+  let github = { enabled: Boolean(env.GITHUB_TOKEN) };
+  if (env.GITHUB_TOKEN) {
+    try {
+      const response = await fetch('https://api.github.com/user', {
+        headers: {
+          Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+          'User-Agent': 'opeclaw-workers'
+        }
+      });
+      const data = await response.json();
+      github = {
+        enabled: response.ok,
+        login: data.login || null,
+        name: data.name || null,
+        public_repos: data.public_repos ?? null
+      };
+    } catch (error) {
+      github = { enabled: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  let huggingface = { enabled: Boolean(env.HF_TOKEN), defaultModel: env.HF_MODEL };
+  if (env.HF_TOKEN) {
+    try {
+      const response = await fetch('https://huggingface.co/api/whoami-v2', {
+        headers: { Authorization: `Bearer ${env.HF_TOKEN}` }
+      });
+      const data = await response.json();
+      huggingface = {
+        enabled: response.ok,
+        name: data.name || null,
+        fullname: data.fullname || null,
+        type: data.type || null,
+        defaultModel: env.HF_MODEL,
+        fallbackModel: env.HF_FALLBACK_MODEL || null
+      };
+    } catch (error) {
+      huggingface = { enabled: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  let counts = { experiments: null, templates: null };
+  if (env.DB) {
+    try {
+      const exp = await env.DB.prepare('SELECT COUNT(*) AS count FROM experiments').first();
+      const tpl = await env.DB.prepare('SELECT COUNT(*) AS count FROM prompt_templates').first();
+      counts = {
+        experiments: Number(exp?.count || 0),
+        templates: Number(tpl?.count || 0)
+      };
+    } catch (error) {
+      counts = { error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  return {
+    ok: true,
+    cloudflare,
+    github,
+    huggingface,
+    storage: counts
+  };
+}
+
 async function listExperiments(env, limit = 20) {
   if (!env.DB) return [];
 
@@ -273,6 +344,10 @@ export default {
         }
         const id = await saveTemplate(env, title, content);
         return json({ ok: true, id }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname === '/api/dashboard' && request.method === 'GET') {
+        return json(await getDashboard(env), 200, corsHeaders(origin));
       }
 
       if (url.pathname.startsWith('/api/templates/') && request.method === 'DELETE') {

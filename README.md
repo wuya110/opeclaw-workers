@@ -41,6 +41,7 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - `GET /api/templates`
 - `POST /api/templates`
 - `DELETE /api/templates/:id`
+- `GET /api/dashboard`
 
 ### 前端实验页
 提供一个最小实验台，用来：
