@@ -1,0 +1,16 @@
+{
+  "name": "opeclaw-workers",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenClaw + Cloudflare + Hugging Face 实验中枢",
+  "type": "module",
+  "scripts": {
+    "dev:worker": "wrangler dev",
+    "deploy:worker": "wrangler deploy",
+    "check": "node --check apps/worker/src/index.js",
+    "smoke": "node scripts/smoke-check.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.69.0"
+  }
+}

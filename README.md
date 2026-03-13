@@ -1,33 +1,103 @@
 # opeclaw-workers
 
-OpenClaw Workers 实验仓库。
+OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 
-## 目标
+## 这个仓库是干什么的
 
-这个仓库用于存放和管理基于 Cloudflare Workers 的实验项目，后续会逐步接入：
+这个仓库的目标不是只放一个 Worker，而是逐步搭出一套完整的 **AI 实验与发布底座**：
 
-- OpenClaw
-- Cloudflare Workers / Pages / KV / D1 / R2
-- Hugging Face 模型与推理能力
-- GitHub Actions 自动化
+- **GitHub**：代码、版本、自动化、文档
+- **Cloudflare**：Worker、Pages、域名、边缘运行
+- **Hugging Face**：模型、推理、实验能力
+- **OpenClaw**：后续接入自动执行与调度能力
 
-## 计划内容
+## 当前目录结构
 
-### 1. AI 实验站
-- 统一入口页面
-- 调用模型进行文本处理
-- 后续可扩展语音、图像、多模态
+```text
+.
+├── apps
+│   ├── web              # 前端实验页
+│   └── worker           # Cloudflare Worker 统一网关
+├── docs
+│   ├── ARCHITECTURE.md  # 架构设计
+│   └── DEPLOY.md        # 部署说明
+├── scripts              # 自检脚本
+├── wrangler.toml        # Worker 配置
+└── .github/workflows    # GitHub Actions
+```
 
-### 2. Worker API 网关
-- 对外暴露统一 API
-- 负责鉴权、限流、路由
-- 转发到不同 AI 能力提供方
+## 当前已实现内容
 
-### 3. 自动化工作流
-- 使用 GitHub 管理代码与版本
-- 使用 Cloudflare 提供部署和公网入口
-- 使用 Hugging Face 承载模型能力或实验服务
+### Worker 网关
+提供这些接口：
 
-## 当前状态
+- `GET /health`
+- `GET /api/whoami`
+- `GET /api/providers`
+- `POST /api/chat`
 
-仓库已创建，后续将从这里开始逐步落地项目骨架。
+### 前端实验页
+提供一个最小实验台，用来：
+
+- 查看网关连通状态
+- 发送 prompt 到 Worker
+- 验证 Hugging Face 推理链路
+
+## 计划路线
+
+### 第一阶段：打通三端
+- [x] GitHub 仓库初始化
+- [x] Worker 网关骨架
+- [x] 前端实验页骨架
+- [x] 中文架构与部署文档
+- [ ] 接入 Cloudflare secrets
+- [ ] 接入 Hugging Face 推理
+- [ ] 配置正式域名
+
+### 第二阶段：做成可持续扩展平台
+- [ ] 多模型路由
+- [ ] 请求日志与实验记录
+- [ ] R2 / KV / D1 接入
+- [ ] GitHub Actions 自动部署
+- [ ] Pages 正式站点
+
+## 本地启动
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 本地跑 Worker
+
+```bash
+npm run dev:worker
+```
+
+### 打开前端实验页
+
+直接打开：
+
+```text
+apps/web/index.html
+```
+
+## 凭据说明
+
+敏感信息不要提交到仓库。
+使用：
+
+```bash
+wrangler secret put HF_TOKEN
+wrangler secret put GITHUB_TOKEN
+```
+
+## 后续方向
+
+这个仓库后面会继续扩成：
+
+- 统一 AI API 网关
+- 个人实验控制台
+- 自动化内容处理流水线
+- OpenClaw 可调用的能力底座
