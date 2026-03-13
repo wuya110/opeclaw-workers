@@ -6,6 +6,7 @@
   --text: #edf2ff;
   --sub: #9db0ff;
   --accent: #78a6ff;
+  --ok: #57d38c;
 }
 
 * { box-sizing: border-box; }
@@ -29,16 +30,21 @@ h1 { margin-bottom: 6px; }
   padding: 20px;
   margin-top: 20px;
 }
-textarea, pre {
+label {
+  display: block;
+  margin: 12px 0 8px;
+  color: var(--sub);
+}
+textarea, pre, input, select {
   width: 100%;
-  min-height: 160px;
   background: #0d1427;
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px;
-  overflow: auto;
 }
+textarea, pre { min-height: 160px; overflow: auto; }
+input, select { min-height: 48px; }
 button {
   margin: 12px 0;
   background: var(--accent);
@@ -50,3 +56,8 @@ button {
   cursor: pointer;
 }
 button:hover { filter: brightness(1.08); }
+.row { display: flex; gap: 16px; }
+.col { flex: 1; }
+@media (max-width: 720px) {
+  .row { flex-direction: column; gap: 0; }
+}

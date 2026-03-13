@@ -12,6 +12,14 @@
       <p class="sub">Cloudflare × GitHub × Hugging Face 统一实验入口</p>
 
       <section class="card">
+        <h2>网关配置</h2>
+        <label for="gatewayBase">网关地址</label>
+        <input id="gatewayBase" value="https://api.yjs.de5.net" />
+        <button id="saveGatewayBtn">保存网关地址</button>
+        <pre id="gatewayInfoBox">默认使用 https://api.yjs.de5.net</pre>
+      </section>
+
+      <section class="card">
         <h2>连通状态</h2>
         <button id="checkBtn">检查网关状态</button>
         <pre id="statusBox">等待检查...</pre>
@@ -19,8 +27,28 @@
 
       <section class="card">
         <h2>文本实验</h2>
+        <label for="model">选择模型</label>
+        <select id="model">
+          <option value="Qwen/Qwen2.5-72B-Instruct">Qwen/Qwen2.5-72B-Instruct</option>
+          <option value="meta-llama/Llama-3.3-70B-Instruct">meta-llama/Llama-3.3-70B-Instruct</option>
+          <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+          <option value="Qwen/Qwen3-32B">Qwen/Qwen3-32B</option>
+        </select>
+
         <label for="prompt">输入内容</label>
         <textarea id="prompt" placeholder="输入一句要让模型处理的文本"></textarea>
+
+        <div class="row">
+          <div class="col">
+            <label for="maxTokens">max_tokens</label>
+            <input id="maxTokens" type="number" value="256" min="1" max="4096" />
+          </div>
+          <div class="col">
+            <label for="temperature">temperature</label>
+            <input id="temperature" type="number" value="0.7" min="0" max="2" step="0.1" />
+          </div>
+        </div>
+
         <button id="runBtn">发送到 Worker 网关</button>
         <pre id="resultBox">等待执行...</pre>
       </section>

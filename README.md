@@ -42,6 +42,8 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 提供一个最小实验台，用来：
 
 - 查看网关连通状态
+- 切换多个模型
+- 自定义网关地址
 - 发送 prompt 到 Worker
 - 验证 Hugging Face 推理链路
 
@@ -57,7 +59,7 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - [x] 打通 Hugging Face 推理链路基础接口
 
 ### 第二阶段：做成可持续扩展平台
-- [ ] 多模型路由
+- [x] 前端多模型切换实验页
 - [ ] 请求日志与实验记录
 - [ ] R2 / KV / D1 接入
 - [ ] GitHub Actions 自动部署
