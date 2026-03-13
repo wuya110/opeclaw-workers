@@ -73,7 +73,7 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function renderResultSummary(data = {}) {
+window.renderResultSummary = function renderResultSummary(data = {}) {
   const answer = (data.answer || '').trim();
   const fallback = data.fallbackUsed ? '发生回退' : '主模型直出';
   const model = data.model || 'unknown';
@@ -556,12 +556,12 @@ async function runPrompt() {
   }
 }
 
-saveGatewayBtn.addEventListener('click', () => {
+saveGatewayBtn?.addEventListener('click', () => {
   localStorage.setItem(storageKey, getGatewayBase());
   gatewayInfoBox.textContent = `当前网关：${getGatewayBase()}`;
 });
-loadDashboardBtn.addEventListener('click', loadDashboard);
-checkBtn.addEventListener('click', async () => {
+loadDashboardBtn?.addEventListener('click', loadDashboard);
+checkBtn?.addEventListener('click', async () => {
   statusBox.textContent = '检查中...';
   try {
     const [health, whoami, providers] = await Promise.all([request('/health'), request('/api/whoami'), request('/api/providers')]);
@@ -570,32 +570,39 @@ checkBtn.addEventListener('click', async () => {
     statusBox.textContent = `检查失败: ${error.message}`;
   }
 });
-runBtn.addEventListener('click', runPrompt);
-loadHistoryBtn.addEventListener('click', loadHistory);
-historySearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadHistory(); });
-historyTagFilter.addEventListener('change', loadHistory);
-historyFallbackFilter.addEventListener('change', loadHistory);
-loadAssetsBtn.addEventListener('click', loadAssets);
-saveAnswerAssetBtn.addEventListener('click', saveCurrentAnswerAsAsset);
-assetSearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadAssets(); });
-assetSourceFilter.addEventListener('change', loadAssets);
-assetTagFilter.addEventListener('change', loadAssets);
-templateSearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadTemplates(); });
-templateCategoryFilter.addEventListener('change', loadTemplates);
-templateFavoriteFilter.addEventListener('change', loadTemplates);
-loadWorkbenchBtn.addEventListener('click', loadWorkbench);
-workbenchTagFilter.addEventListener('change', loadWorkbench);
-copyAnswerBtn.addEventListener('click', async () => {
+runBtn?.addEventListener('click', runPrompt);
+loadHistoryBtn?.addEventListener('click', loadHistory);
+historySearchInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadHistory(); });
+historyTagFilter?.addEventListener('change', loadHistory);
+historyFallbackFilter?.addEventListener('change', loadHistory);
+loadAssetsBtn?.addEventListener('click', loadAssets);
+saveAnswerAssetBtn?.addEventListener('click', saveCurrentAnswerAsAsset);
+assetSearchInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadAssets(); });
+assetSourceFilter?.addEventListener('change', loadAssets);
+assetTagFilter?.addEventListener('change', loadAssets);
+templateSearchInput?.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadTemplates(); });
+templateCategoryFilter?.addEventListener('change', loadTemplates);
+templateFavoriteFilter?.addEventListener('change', loadTemplates);
+loadWorkbenchBtn?.addEventListener('click', loadWorkbench);
+workbenchTagFilter?.addEventListener('change', loadWorkbench);
+copyAnswerBtn?.addEventListener('click', async () => {
   const text = answerBox.textContent.trim();
   if (!text || text === '等待执行...' || text === '执行中...') return;
   await navigator.clipboard.writeText(text);
   metaTag.textContent = '回答已复制';
   metaTag.className = 'meta-tag ok';
 });
-clearPromptBtn.addEventListener('click', () => { promptInput.value = ''; promptInput.focus(); });
+clearPromptBtn?.addEventListener('click', () => { promptInput.value = ''; promptInput.focus(); });
 
 loadDashboard();
 loadTemplates();
 loadHistory();
 loadAssets();
 loadWorkbench();
+
+window.addEventListener('error', (event) => {
+  if (metaTag) {
+    metaTag.textContent = `前端错误：${event.message}`;
+    metaTag.className = 'meta-tag danger';
+  }
+});

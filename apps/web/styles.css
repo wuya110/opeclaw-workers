@@ -5,6 +5,7 @@
   --line: #2b365c;
   --text: #edf2ff;
   --sub: #9db0ff;
+  --muted: #94a3c7;
   --accent: #78a6ff;
   --ok: #57d38c;
   --warn: #ffcf5a;
@@ -90,3 +91,19 @@ button.small { padding: 8px 12px; font-size: 12px; }
 .metric-card { border: 1px solid var(--line); border-radius: 14px; background: #0d1427; padding: 14px; display: grid; gap: 6px; }
 .metric-card strong { font-size: 24px; }
 @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+
+
+@media (max-width: 960px) {
+  .container { max-width: 100%; padding: 20px 14px 48px; }
+  .card { padding: 16px; border-radius: 14px; }
+  .dashboard-grid, .template-grid, .result-grid { grid-template-columns: 1fr; }
+  .inline-actions, .history-head, .action-row, .history-buttons, .history-models { display: grid; grid-template-columns: 1fr; }
+  #templateSearch, #historySearch, #assetSearch, #assetSourceFilter, #assetTagFilter, #historyTagFilter, #historyFallbackFilter, #templateCategoryFilter, #templateFavoriteFilter, #workbenchTagFilter { min-width: 0; width: 100%; }
+}
+
+@media (min-width: 1280px) {
+  .container { max-width: 1280px; }
+  .dashboard-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .template-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .history-box { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
