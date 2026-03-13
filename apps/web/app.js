@@ -1,4 +1,4 @@
-const gatewayBase = 'http://127.0.0.1:8787';
+const gatewayBase = 'https://api.yjs.de5.net';
 
 const statusBox = document.querySelector('#statusBox');
 const resultBox = document.querySelector('#resultBox');

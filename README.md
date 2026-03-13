@@ -50,9 +50,9 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - [x] Worker 网关骨架
 - [x] 前端实验页骨架
 - [x] 中文架构与部署文档
-- [ ] 接入 Cloudflare secrets
-- [ ] 接入 Hugging Face 推理
-- [ ] 配置正式域名
+- [x] 接入 Cloudflare secrets
+- [x] 配置正式域名（api.yjs.de5.net）
+- [x] 打通 Hugging Face 推理链路基础接口
 
 ### 第二阶段：做成可持续扩展平台
 - [ ] 多模型路由
