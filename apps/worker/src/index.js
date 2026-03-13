@@ -138,14 +138,28 @@ async function updateExperimentTag(env, id, tag) {
   await env.DB.prepare('UPDATE experiments SET tag = ? WHERE id = ?').bind(tag, id).run();
 }
 
+async function updateAssetTag(env, id, tag) {
+  if (!env.DB) return;
+  await env.DB.prepare('UPDATE text_assets SET tag = ? WHERE id = ?').bind(tag, id).run();
+}
+
+async function getWorkbench(env, tag = '') {
+  const limit = 20;
+  const templates = (await listTemplates(env, 100)).filter((item) => !tag || String(item.category || '') === tag).slice(0, limit);
+  const experiments = await listExperiments(env, { limit, tag });
+  const assets = await listTextAssets(env, { limit, tag });
+  return { ok: true, tag: tag || '全部', templates, experiments, assets };
+}
+
 async function listTextAssets(env, options = {}) {
   if (!env.DB) return [];
   const limit = Number(options.limit || 20);
   const q = String(options.q || '').trim();
   const source = String(options.source || '').trim();
+  const tag = String(options.tag || '').trim();
 
   let sql = `
-    SELECT id, created_at, name, content, source
+    SELECT id, created_at, name, content, source, COALESCE(tag, '未分类') AS tag
     FROM text_assets
     WHERE 1 = 1
   `;
@@ -162,6 +176,11 @@ async function listTextAssets(env, options = {}) {
     binds.push(source);
   }
 
+  if (tag) {
+    sql += ' AND tag = ?';
+    binds.push(tag);
+  }
+
   sql += ' ORDER BY id DESC LIMIT ?';
   binds.push(limit);
 
@@ -169,19 +188,19 @@ async function listTextAssets(env, options = {}) {
   return result.results || [];
 }
 
-async function saveTextAsset(env, name, content, source = 'manual') {
+async function saveTextAsset(env, name, content, source = 'manual', tag = '未分类') {
   if (!env.DB) return null;
   const result = await env.DB.prepare(`
-    INSERT INTO text_assets (created_at, name, content, source)
-    VALUES (?, ?, ?, ?)
-  `).bind(new Date().toISOString(), name, content, source).run();
+    INSERT INTO text_assets (created_at, name, content, source, tag)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(new Date().toISOString(), name, content, source, tag).run();
   return result.meta?.last_row_id || null;
 }
 
 async function getTextAsset(env, id) {
   if (!env.DB) return null;
   return await env.DB.prepare(`
-    SELECT id, created_at, name, content, source
+    SELECT id, created_at, name, content, source, COALESCE(tag, '未分类') AS tag
     FROM text_assets
     WHERE id = ?
   `).bind(id).first();
@@ -529,7 +548,8 @@ export default {
         const rows = await listTextAssets(env, {
           limit: Number(url.searchParams.get('limit') || 20),
           q: url.searchParams.get('q') || '',
-          source: url.searchParams.get('source') || ''
+          source: url.searchParams.get('source') || '',
+          tag: url.searchParams.get('tag') || ''
         });
         return json({ ok: true, items: rows }, 200, corsHeaders(origin));
       }
@@ -539,11 +559,27 @@ export default {
         const name = String(body?.name || 'asset').trim();
         const content = String(body?.content || '').trim();
         const source = String(body?.source || 'manual').trim();
+        const tag = String(body?.tag || detectExperimentTag(content)).trim() || '未分类';
         if (!content) {
           return json({ ok: false, error: 'content 不能为空' }, 400, corsHeaders(origin));
         }
-        const id = await saveTextAsset(env, name, content, source);
+        const id = await saveTextAsset(env, name, content, source, tag);
         return json({ ok: true, id }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname === '/api/workbench' && request.method === 'GET') {
+        return json(await getWorkbench(env, String(url.searchParams.get('tag') || '').trim()), 200, corsHeaders(origin));
+      }
+
+      if (url.pathname.startsWith('/api/assets/') && request.method === 'PATCH') {
+        const id = Number(url.pathname.split('/').pop());
+        if (!id) {
+          return json({ ok: false, error: '无效资产 id' }, 400, corsHeaders(origin));
+        }
+        const body = await request.json();
+        const tag = String(body?.tag || '未分类').trim() || '未分类';
+        await updateAssetTag(env, id, tag);
+        return json({ ok: true }, 200, corsHeaders(origin));
       }
 
       if (url.pathname.startsWith('/api/assets/') && request.method === 'GET') {

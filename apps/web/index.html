@@ -44,9 +44,38 @@
             <option value="history-archive">历史归档</option>
             <option value="smoke-test">测试数据</option>
           </select>
+          <select id="assetTagFilter">
+            <option value="">全部标签</option>
+            <option value="分析">分析</option>
+            <option value="写作">写作</option>
+            <option value="代码">代码</option>
+            <option value="排障">排障</option>
+            <option value="运营">运营</option>
+            <option value="未分类">未分类</option>
+          </select>
         </div>
         <div id="assetsBox" class="history-box">等待加载...</div>
         <div id="assetDetailBox" class="asset-detail-box">点击某条资产查看详情...</div>
+      </section>
+
+
+      <section class="card">
+        <div class="history-head">
+          <h2>标签联动视图</h2>
+          <div class="inline-actions">
+            <select id="workbenchTagFilter">
+              <option value="">全部</option>
+              <option value="分析">分析</option>
+              <option value="写作">写作</option>
+              <option value="代码">代码</option>
+              <option value="排障">排障</option>
+              <option value="运营">运营</option>
+              <option value="未分类">未分类</option>
+            </select>
+            <button id="loadWorkbenchBtn">刷新联动视图</button>
+          </div>
+        </div>
+        <div id="workbenchBox" class="dashboard-grid">等待加载...</div>
       </section>
 
       <section class="card">

@@ -28,3 +28,6 @@ CREATE TABLE IF NOT EXISTS text_assets (
 
 
 -- 旧库通过 API 补 experiments.tag 列
+
+
+-- 旧库通过 API 补 text_assets.tag 列

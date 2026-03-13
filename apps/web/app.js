@@ -5,6 +5,7 @@ const statusBox = document.querySelector('#statusBox');
 const assetNameInput = document.querySelector('#assetName');
 const assetSearchInput = document.querySelector('#assetSearch');
 const assetSourceFilter = document.querySelector('#assetSourceFilter');
+const assetTagFilter = document.querySelector('#assetTagFilter');
 const assetsBox = document.querySelector('#assetsBox');
 const assetDetailBox = document.querySelector('#assetDetailBox');
 const saveAnswerAssetBtn = document.querySelector('#saveAnswerAssetBtn');
@@ -34,6 +35,9 @@ const templateSearchInput = document.querySelector('#templateSearch');
 const templateCategoryFilter = document.querySelector('#templateCategoryFilter');
 const templateFavoriteFilter = document.querySelector('#templateFavoriteFilter');
 const dashboardBox = document.querySelector('#dashboardBox');
+const workbenchTagFilter = document.querySelector('#workbenchTagFilter');
+const loadWorkbenchBtn = document.querySelector('#loadWorkbenchBtn');
+const workbenchBox = document.querySelector('#workbenchBox');
 
 const storageKey = 'opeclaw.gatewayBase';
 const defaultGateway = 'https://api.yjs.de5.net';
@@ -102,7 +106,7 @@ async function archiveHistoryItemAsAsset(payload) {
   await request('/api/assets/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, content, source: 'history-archive' })
+    body: JSON.stringify({ name, content, source: 'history-archive', tag: payload.tag || '未分类' })
   });
   metaTag.textContent = '历史记录已归档到资产区';
   metaTag.className = 'meta-tag ok';
@@ -127,6 +131,7 @@ async function showAssetDetail(id) {
         <div class="history-models">
           <span>名称：${escapeHtml(item.name || '')}</span>
           <span>来源：${escapeHtml(item.source || '')}</span>
+          <span class="badge">标签：${escapeHtml(item.tag || '未分类')}</span>
         </div>
         <div class="history-block"><div class="history-label">内容</div><div class="history-text">${escapeHtml(item.content || '')}</div></div>
         <div class="history-buttons">
@@ -156,7 +161,8 @@ async function loadAssets() {
   try {
     const q = encodeURIComponent(assetSearchInput.value.trim());
     const source = encodeURIComponent(assetSourceFilter.value);
-    const result = await request(`/api/assets?limit=20&q=${q}&source=${source}`);
+    const tag = encodeURIComponent(assetTagFilter.value);
+    const result = await request(`/api/assets?limit=20&q=${q}&source=${source}&tag=${tag}`);
     const items = result.data?.items || [];
     if (!items.length) {
       assetsBox.textContent = '暂无资产';
@@ -171,11 +177,13 @@ async function loadAssets() {
         <div class="history-models">
           <span>名称：${escapeHtml(item.name || '')}</span>
           <span>来源：${escapeHtml(item.source || '')}</span>
+          <span class="badge">标签：${escapeHtml(item.tag || '未分类')}</span>
         </div>
         <div class="history-block"><div class="history-label">内容预览</div><div class="history-text">${escapeHtml((item.content || '').slice(0, 160))}</div></div>
         <div class="history-buttons">
           <button class="secondary small" data-open-asset="${escapeHtml(item.id)}">查看详情</button>
           <button class="secondary small" data-use-asset-content="${escapeHtml(item.content || '')}">投喂模型</button>
+          <button class="secondary small" data-tag-asset='${JSON.stringify({ id: item.id, tag: item.tag || '未分类' }).replaceAll("'", '&#39;')}'>改标签</button>
         </div>
       </article>
     `).join('');
@@ -190,6 +198,20 @@ async function loadAssets() {
         promptInput.focus();
         metaTag.textContent = '资产内容已载入输入框';
         metaTag.className = 'meta-tag ok';
+      });
+    });
+    assetsBox.querySelectorAll('[data-tag-asset]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const payload = JSON.parse(button.getAttribute('data-tag-asset'));
+        const nextTag = window.prompt('资产标签', payload.tag || '未分类');
+        if (nextTag === null) return;
+        await request(`/api/assets/${payload.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tag: nextTag })
+        });
+        await loadAssets();
+        await loadWorkbench();
       });
     });
   } catch (error) {
@@ -209,6 +231,33 @@ async function saveCurrentAnswerAsAsset() {
   metaTag.textContent = '回答已保存到资产区';
   metaTag.className = 'meta-tag ok';
   await loadAssets();
+}
+
+
+async function loadWorkbench() {
+  workbenchBox.textContent = '加载中...';
+  try {
+    const tag = encodeURIComponent(workbenchTagFilter.value);
+    const result = await request(`/api/workbench?tag=${tag}`);
+    const data = result.data || {};
+    const renderList = (items, emptyText, formatter) => items?.length ? items.map(formatter).join('') : `<div class="mini-empty">${emptyText}</div>`;
+    workbenchBox.innerHTML = `
+      <article class="dashboard-card">
+        <h3>模板</h3>
+        ${renderList(data.templates, '暂无模板', (item) => `<div class="mini-row">${escapeHtml(item.title)}<span class="template-meta">${escapeHtml(item.category || '未分类')}</span></div>`)}
+      </article>
+      <article class="dashboard-card">
+        <h3>实验记录</h3>
+        ${renderList(data.experiments, '暂无记录', (item) => `<div class="mini-row">#${escapeHtml(item.id)} ${escapeHtml((item.prompt || '').slice(0, 28))}<span class="template-meta">${escapeHtml(item.tag || '未分类')}</span></div>`)}
+      </article>
+      <article class="dashboard-card">
+        <h3>资产</h3>
+        ${renderList(data.assets, '暂无资产', (item) => `<div class="mini-row">${escapeHtml(item.name || '')}<span class="template-meta">${escapeHtml(item.tag || '未分类')}</span></div>`)}
+      </article>
+    `;
+  } catch (error) {
+    workbenchBox.textContent = `加载失败：${error.message}`;
+  }
 }
 
 async function loadDashboard() {
@@ -522,9 +571,12 @@ loadAssetsBtn.addEventListener('click', loadAssets);
 saveAnswerAssetBtn.addEventListener('click', saveCurrentAnswerAsAsset);
 assetSearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadAssets(); });
 assetSourceFilter.addEventListener('change', loadAssets);
+assetTagFilter.addEventListener('change', loadAssets);
 templateSearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadTemplates(); });
 templateCategoryFilter.addEventListener('change', loadTemplates);
 templateFavoriteFilter.addEventListener('change', loadTemplates);
+loadWorkbenchBtn.addEventListener('click', loadWorkbench);
+workbenchTagFilter.addEventListener('change', loadWorkbench);
 copyAnswerBtn.addEventListener('click', async () => {
   const text = answerBox.textContent.trim();
   if (!text || text === '等待执行...' || text === '执行中...') return;
@@ -538,3 +590,4 @@ loadDashboard();
 loadTemplates();
 loadHistory();
 loadAssets();
+loadWorkbench();

@@ -76,3 +76,7 @@ button.small { padding: 8px 12px; font-size: 12px; }
 #assetSearch, #assetSourceFilter { min-width: 180px; }
 
 #historyTagFilter { min-width: 120px; }
+
+.mini-row { display: grid; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.mini-empty { color: var(--muted); }
+#assetTagFilter, #workbenchTagFilter { min-width: 120px; }
