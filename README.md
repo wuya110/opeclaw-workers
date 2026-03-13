@@ -29,6 +29,8 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 ## 当前已实现内容
 
 ### Worker 网关
+默认通过 Hugging Face Router 调用模型，当前默认模型：`Qwen/Qwen2.5-72B-Instruct`。
+
 提供这些接口：
 
 - `GET /health`

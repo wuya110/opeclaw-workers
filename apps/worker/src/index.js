@@ -69,23 +69,27 @@ async function handleChat(request, env, origin) {
     return json({ ok: false, error: 'prompt 不能为空' }, 400, corsHeaders(origin));
   }
 
-  const model = String(body?.model || env.HF_MODEL || 'Qwen/Qwen2.5-7B-Instruct');
-  const payload = {
-    inputs: prompt,
-    parameters: {
-      max_new_tokens: Number(body?.max_new_tokens || 256),
-      return_full_text: false,
-      temperature: Number(body?.temperature || 0.7)
-    }
-  };
+  const model = String(body?.model || env.HF_MODEL || 'Qwen/Qwen2.5-72B-Instruct');
+  const maxTokens = Number(body?.max_tokens || body?.max_new_tokens || 256);
+  const temperature = Number(body?.temperature || 0.7);
 
-  const upstream = await fetch(`https://router.huggingface.co/hf-inference/models/${encodeURIComponent(model)}`, {
+  const upstream = await fetch('https://router.huggingface.co/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${env.HF_TOKEN}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: maxTokens,
+      temperature
+    })
   });
 
   const raw = await upstream.text();
@@ -96,9 +100,15 @@ async function handleChat(request, env, origin) {
     parsed = raw;
   }
 
+  let answer = null;
+  if (parsed && Array.isArray(parsed.choices) && parsed.choices[0]?.message) {
+    answer = parsed.choices[0].message.content || '';
+  }
+
   return json({
     ok: upstream.ok,
     model,
+    answer,
     result: parsed
   }, upstream.ok ? 200 : upstream.status, corsHeaders(origin));
 }

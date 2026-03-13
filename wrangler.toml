@@ -6,7 +6,7 @@ workers_dev = true
 [vars]
 APP_NAME = "院生 AI 实验站"
 ALLOW_ORIGIN = "*"
-HF_MODEL = "Qwen/Qwen2.5-7B-Instruct"
+HF_MODEL = "Qwen/Qwen2.5-72B-Instruct"
 
 [observability.logs]
 enabled = true
