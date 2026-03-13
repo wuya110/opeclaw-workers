@@ -37,6 +37,7 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - `GET /api/whoami`
 - `GET /api/providers`
 - `POST /api/chat`
+- `GET /api/experiments`
 
 ### 前端实验页
 提供一个最小实验台，用来：
@@ -59,6 +60,7 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - [x] 打通 Hugging Face 推理链路基础接口
 
 ### 第二阶段：做成可持续扩展平台
+- [x] D1 实验记录存储
 - [x] 前端多模型切换实验页
 - [ ] 请求日志与实验记录
 - [ ] R2 / KV / D1 接入

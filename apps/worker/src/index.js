@@ -37,6 +37,7 @@ async function handleProviders(env, origin) {
         enabled: true,
         entrypoint: 'https://api.yjs.de5.net',
         web: 'https://lab.yjs.de5.net',
+        d1: Boolean(env.DB),
         role: '公网入口、路由、鉴权、限流、边缘执行'
       },
       huggingface: {
@@ -51,6 +52,45 @@ async function handleProviders(env, origin) {
       }
     }
   }, 200, corsHeaders(origin));
+}
+
+async function saveExperiment(env, payload) {
+  if (!env.DB) return;
+
+  await env.DB.prepare(`
+    INSERT INTO experiments (
+      created_at,
+      prompt,
+      requested_model,
+      final_model,
+      fallback_used,
+      answer,
+      raw_result
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `)
+    .bind(
+      new Date().toISOString(),
+      payload.prompt,
+      payload.requestedModel,
+      payload.finalModel,
+      payload.fallbackUsed ? 1 : 0,
+      payload.answer,
+      JSON.stringify(payload.rawResult)
+    )
+    .run();
+}
+
+async function listExperiments(env, limit = 20) {
+  if (!env.DB) return [];
+
+  const result = await env.DB.prepare(`
+    SELECT id, created_at, prompt, requested_model, final_model, fallback_used, answer
+    FROM experiments
+    ORDER BY id DESC
+    LIMIT ?
+  `).bind(limit).all();
+
+  return result.results || [];
 }
 
 async function callHfChat(env, model, prompt, maxTokens, temperature) {
@@ -109,6 +149,15 @@ async function handleChat(request, env, origin) {
   const primaryOk = primary.upstream.ok && primary.answer.trim();
 
   if (primaryOk || model === fallbackModel) {
+    await saveExperiment(env, {
+      prompt,
+      requestedModel: model,
+      finalModel: model,
+      fallbackUsed: false,
+      answer: primary.answer,
+      rawResult: primary.parsed
+    });
+
     return json({
       ok: primary.upstream.ok,
       model,
@@ -119,6 +168,18 @@ async function handleChat(request, env, origin) {
   }
 
   const fallback = await callHfChat(env, fallbackModel, prompt, maxTokens, temperature);
+  await saveExperiment(env, {
+    prompt,
+    requestedModel: model,
+    finalModel: fallbackModel,
+    fallbackUsed: true,
+    answer: fallback.answer,
+    rawResult: {
+      primary: primary.parsed,
+      fallback: fallback.parsed
+    }
+  });
+
   return json({
     ok: fallback.upstream.ok,
     model: fallbackModel,
@@ -161,6 +222,11 @@ export default {
 
       if (url.pathname === '/api/chat' && request.method === 'POST') {
         return handleChat(request, env, origin);
+      }
+
+      if (url.pathname === '/api/experiments' && request.method === 'GET') {
+        const rows = await listExperiments(env, Number(url.searchParams.get('limit') || 20));
+        return json({ ok: true, items: rows }, 200, corsHeaders(origin));
       }
 
       return json({ ok: false, error: '路由不存在' }, 404, corsHeaders(origin));

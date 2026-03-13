@@ -11,3 +11,8 @@ HF_FALLBACK_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
 
 [observability.logs]
 enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "opeclaw-workers-db"
+database_id = "5df097d0-963f-4c43-bb04-7b9604bb19ca"
