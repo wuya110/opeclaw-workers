@@ -117,12 +117,13 @@ async function getDashboard(env) {
     d1: Boolean(env.DB)
   };
 
-  let github = { enabled: Boolean(env.GITHUB_TOKEN) };
-  if (env.GITHUB_TOKEN) {
+  const githubToken = typeof env.GITHUB_TOKEN === 'string' ? env.GITHUB_TOKEN.trim() : '';
+  let github = { enabled: Boolean(githubToken) };
+  if (githubToken) {
     try {
       const response = await fetch('https://api.github.com/user', {
         headers: {
-          Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+          Authorization: `Bearer ${githubToken}`,
           'User-Agent': 'opeclaw-workers'
         }
       });
