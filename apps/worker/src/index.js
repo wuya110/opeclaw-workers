@@ -85,24 +85,33 @@ async function listTemplates(env, limit = 50) {
   if (!env.DB) return [];
 
   const result = await env.DB.prepare(`
-    SELECT id, created_at, title, content
+    SELECT id, created_at, title, content, COALESCE(category, '未分类') AS category, COALESCE(is_favorite, 0) AS is_favorite
     FROM prompt_templates
-    ORDER BY id DESC
+    ORDER BY is_favorite DESC, id DESC
     LIMIT ?
   `).bind(limit).all();
 
   return result.results || [];
 }
 
-async function saveTemplate(env, title, content) {
+async function saveTemplate(env, title, content, category = '未分类', isFavorite = false) {
   if (!env.DB) return null;
 
   const result = await env.DB.prepare(`
-    INSERT INTO prompt_templates (created_at, title, content)
-    VALUES (?, ?, ?)
-  `).bind(new Date().toISOString(), title, content).run();
+    INSERT INTO prompt_templates (created_at, title, content, category, is_favorite)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(new Date().toISOString(), title, content, category, isFavorite ? 1 : 0).run();
 
   return result.meta?.last_row_id || null;
+}
+
+async function updateTemplateMeta(env, id, category, isFavorite) {
+  if (!env.DB) return;
+  await env.DB.prepare(`
+    UPDATE prompt_templates
+    SET category = ?, is_favorite = ?
+    WHERE id = ?
+  `).bind(category, isFavorite ? 1 : 0, id).run();
 }
 
 async function deleteTemplate(env, id) {
@@ -417,7 +426,19 @@ export default {
       }
 
       if (url.pathname === '/api/templates' && request.method === 'GET') {
-        const rows = await listTemplates(env, Number(url.searchParams.get('limit') || 50));
+        let rows = await listTemplates(env, Number(url.searchParams.get('limit') || 50));
+        const q = String(url.searchParams.get('q') || '').trim().toLowerCase();
+        const category = String(url.searchParams.get('category') || '').trim();
+        const favorite = String(url.searchParams.get('favorite') || '').trim();
+        if (q) {
+          rows = rows.filter((item) => [item.title, item.content, item.category].some((v) => String(v || '').toLowerCase().includes(q)));
+        }
+        if (category) {
+          rows = rows.filter((item) => String(item.category || '') === category);
+        }
+        if (favorite === 'true') {
+          rows = rows.filter((item) => Number(item.is_favorite) === 1);
+        }
         return json({ ok: true, items: rows }, 200, corsHeaders(origin));
       }
 
@@ -425,10 +446,12 @@ export default {
         const body = await request.json();
         const title = String(body?.title || '').trim();
         const content = String(body?.content || '').trim();
+        const category = String(body?.category || '未分类').trim() || '未分类';
+        const isFavorite = Boolean(body?.is_favorite);
         if (!title || !content) {
           return json({ ok: false, error: 'title 和 content 不能为空' }, 400, corsHeaders(origin));
         }
-        const id = await saveTemplate(env, title, content);
+        const id = await saveTemplate(env, title, content, category, isFavorite);
         return json({ ok: true, id }, 200, corsHeaders(origin));
       }
 
@@ -463,6 +486,18 @@ export default {
           return json({ ok: false, error: '资产不存在' }, 404, corsHeaders(origin));
         }
         return json({ ok: true, item }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname.startsWith('/api/templates/') && request.method === 'PATCH') {
+        const id = Number(url.pathname.split('/').pop());
+        if (!id) {
+          return json({ ok: false, error: '无效模板 id' }, 400, corsHeaders(origin));
+        }
+        const body = await request.json();
+        const category = String(body?.category || '未分类').trim() || '未分类';
+        const isFavorite = Boolean(body?.is_favorite);
+        await updateTemplateMeta(env, id, category, isFavorite);
+        return json({ ok: true }, 200, corsHeaders(origin));
       }
 
       if (url.pathname.startsWith('/api/templates/') && request.method === 'DELETE') {
