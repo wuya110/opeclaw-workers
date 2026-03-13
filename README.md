@@ -37,7 +37,7 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - `GET /api/whoami`
 - `GET /api/providers`
 - `POST /api/chat`
-- `GET /api/experiments`
+- `GET /api/experiments`（支持 `limit` / `q` / `fallback`）
 - `GET /api/templates`
 - `POST /api/templates`
 - `DELETE /api/templates/:id`

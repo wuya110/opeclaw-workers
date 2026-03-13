@@ -243,16 +243,36 @@ async function getDashboard(env) {
   };
 }
 
-async function listExperiments(env, limit = 20) {
+async function listExperiments(env, options = {}) {
   if (!env.DB) return [];
 
-  const result = await env.DB.prepare(`
+  const limit = Number(options.limit || 20);
+  const q = String(options.q || '').trim();
+  const fallback = String(options.fallback || '').trim();
+
+  let sql = `
     SELECT id, created_at, prompt, requested_model, final_model, fallback_used, answer
     FROM experiments
-    ORDER BY id DESC
-    LIMIT ?
-  `).bind(limit).all();
+    WHERE 1 = 1
+  `;
+  const binds = [];
 
+  if (q) {
+    sql += ' AND (prompt LIKE ? OR answer LIKE ? OR requested_model LIKE ? OR final_model LIKE ?)';
+    const like = `%${q}%`;
+    binds.push(like, like, like, like);
+  }
+
+  if (fallback === 'true') {
+    sql += ' AND fallback_used = 1';
+  } else if (fallback === 'false') {
+    sql += ' AND fallback_used = 0';
+  }
+
+  sql += ' ORDER BY id DESC LIMIT ?';
+  binds.push(limit);
+
+  const result = await env.DB.prepare(sql).bind(...binds).all();
   return result.results || [];
 }
 
@@ -388,7 +408,11 @@ export default {
       }
 
       if (url.pathname === '/api/experiments' && request.method === 'GET') {
-        const rows = await listExperiments(env, Number(url.searchParams.get('limit') || 20));
+        const rows = await listExperiments(env, {
+          limit: Number(url.searchParams.get('limit') || 20),
+          q: url.searchParams.get('q') || '',
+          fallback: url.searchParams.get('fallback') || ''
+        });
         return json({ ok: true, items: rows }, 200, corsHeaders(origin));
       }
 

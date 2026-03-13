@@ -18,6 +18,8 @@ const maxTokensInput = document.querySelector('#maxTokens');
 const temperatureInput = document.querySelector('#temperature');
 const loadHistoryBtn = document.querySelector('#loadHistoryBtn');
 const historyLimitInput = document.querySelector('#historyLimit');
+const historySearchInput = document.querySelector('#historySearch');
+const historyFallbackFilter = document.querySelector('#historyFallbackFilter');
 const historyBox = document.querySelector('#historyBox');
 const templateBox = document.querySelector('#templateBox');
 const dashboardBox = document.querySelector('#dashboardBox');
@@ -163,7 +165,9 @@ async function loadHistory() {
   historyBox.textContent = '加载中...';
   try {
     const limit = Number(historyLimitInput.value || 10);
-    const result = await request(`/api/experiments?limit=${limit}`);
+    const q = encodeURIComponent(historySearchInput.value.trim());
+    const fallback = encodeURIComponent(historyFallbackFilter.value);
+    const result = await request(`/api/experiments?limit=${limit}&q=${q}&fallback=${fallback}`);
     const items = result.data?.items || [];
     if (!items.length) {
       historyBox.textContent = '暂无记录';
@@ -282,6 +286,8 @@ checkBtn.addEventListener('click', async () => {
 });
 runBtn.addEventListener('click', runPrompt);
 loadHistoryBtn.addEventListener('click', loadHistory);
+historySearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadHistory(); });
+historyFallbackFilter.addEventListener('change', loadHistory);
 copyAnswerBtn.addEventListener('click', async () => {
   const text = answerBox.textContent.trim();
   if (!text || text === '等待执行...' || text === '执行中...') return;

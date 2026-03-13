@@ -63,3 +63,6 @@ button.small { padding: 8px 12px; font-size: 12px; }
 .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 
 .asset-detail-box { margin-top: 12px; }
+
+#historySearch { min-width: 240px; }
+#historyFallbackFilter { min-width: 120px; }
