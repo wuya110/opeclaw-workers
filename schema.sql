@@ -8,3 +8,11 @@ CREATE TABLE IF NOT EXISTS experiments (
   answer TEXT,
   raw_result TEXT
 );
+
+
+CREATE TABLE IF NOT EXISTS prompt_templates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL
+);

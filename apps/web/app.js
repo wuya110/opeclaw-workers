@@ -21,31 +21,13 @@ const templateBox = document.querySelector('#templateBox');
 
 const storageKey = 'opeclaw.gatewayBase';
 const defaultGateway = 'https://api.yjs.de5.net';
-const templates = [
-  {
-    title: '总结提炼',
-    prompt: '请用中文提炼下面内容的核心观点，输出 3 条要点和 1 条结论：\n\n'
-  },
-  {
-    title: '改写润色',
-    prompt: '请把下面这段话改写得更自然、更有条理，但不要改变原意：\n\n'
-  },
-  {
-    title: '短文案',
-    prompt: '请基于下面信息，写 3 条简短中文文案，每条不超过 30 字：\n\n'
-  },
-  {
-    title: '代码解释',
-    prompt: '请用中文解释下面代码的作用、输入输出和关键逻辑：\n\n'
-  },
-  {
-    title: '排查思路',
-    prompt: '请根据下面问题给出直接可执行的排查步骤和修复建议：\n\n'
-  },
-  {
-    title: '结构化提问',
-    prompt: '请把下面需求整理成更清晰的执行清单、关键风险和下一步动作：\n\n'
-  }
+const builtinTemplates = [
+  { title: '总结提炼', prompt: '请用中文提炼下面内容的核心观点，输出 3 条要点和 1 条结论：\n\n' },
+  { title: '改写润色', prompt: '请把下面这段话改写得更自然、更有条理，但不要改变原意：\n\n' },
+  { title: '短文案', prompt: '请基于下面信息，写 3 条简短中文文案，每条不超过 30 字：\n\n' },
+  { title: '代码解释', prompt: '请用中文解释下面代码的作用、输入输出和关键逻辑：\n\n' },
+  { title: '排查思路', prompt: '请根据下面问题给出直接可执行的排查步骤和修复建议：\n\n' },
+  { title: '结构化提问', prompt: '请把下面需求整理成更清晰的执行清单、关键风险和下一步动作：\n\n' }
 ];
 
 gatewayInput.value = localStorage.getItem(storageKey) || defaultGateway;
@@ -70,20 +52,68 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function renderTemplates() {
-  templateBox.innerHTML = templates.map((item, index) => `
-    <button class="template-card" data-template-index="${index}">
+async function loadTemplates() {
+  templateBox.innerHTML = '<div class="template-manage"><input id="customTemplateTitle" placeholder="自定义模板标题" /><textarea id="customTemplateContent" placeholder="自定义模板内容"></textarea><button id="saveTemplateBtn">保存自定义模板</button></div>';
+
+  const builtinHtml = builtinTemplates.map((item, index) => `
+    <button class="template-card" data-template-type="builtin" data-template-index="${index}">
       <strong>${escapeHtml(item.title)}</strong>
       <span>${escapeHtml(item.prompt.slice(0, 30))}...</span>
     </button>
   `).join('');
 
-  templateBox.querySelectorAll('[data-template-index]').forEach((button) => {
+  let customHtml = '';
+  try {
+    const result = await request('/api/templates?limit=50');
+    const items = result.data?.items || [];
+    customHtml = items.map((item) => `
+      <div class="template-card template-custom">
+        <strong>${escapeHtml(item.title)}</strong>
+        <span>${escapeHtml(item.content.slice(0, 40))}...</span>
+        <div class="history-buttons">
+          <button class="secondary small" data-template-type="custom" data-template-content="${escapeHtml(item.content)}">使用</button>
+          <button class="secondary small" data-delete-template="${item.id}">删除</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    customHtml = `<div class="template-card template-custom"><span>自定义模板加载失败：${escapeHtml(error.message)}</span></div>`;
+  }
+
+  templateBox.innerHTML += builtinHtml + customHtml;
+
+  templateBox.querySelectorAll('[data-template-type="builtin"]').forEach((button) => {
     button.addEventListener('click', () => {
-      const template = templates[Number(button.dataset.templateIndex)];
+      const template = builtinTemplates[Number(button.dataset.templateIndex)];
       promptInput.value = template.prompt;
       promptInput.focus();
     });
+  });
+
+  templateBox.querySelectorAll('[data-template-type="custom"]').forEach((button) => {
+    button.addEventListener('click', () => {
+      promptInput.value = button.getAttribute('data-template-content');
+      promptInput.focus();
+    });
+  });
+
+  templateBox.querySelectorAll('[data-delete-template]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await request(`/api/templates/${button.getAttribute('data-delete-template')}`, { method: 'DELETE' });
+      await loadTemplates();
+    });
+  });
+
+  document.querySelector('#saveTemplateBtn')?.addEventListener('click', async () => {
+    const title = document.querySelector('#customTemplateTitle')?.value?.trim();
+    const content = document.querySelector('#customTemplateContent')?.value?.trim();
+    if (!title || !content) return;
+    await request('/api/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content })
+    });
+    await loadTemplates();
   });
 }
 
@@ -93,12 +123,10 @@ async function loadHistory() {
     const limit = Number(historyLimitInput.value || 10);
     const result = await request(`/api/experiments?limit=${limit}`);
     const items = result.data?.items || [];
-
     if (!items.length) {
       historyBox.textContent = '暂无记录';
       return;
     }
-
     historyBox.innerHTML = items.map((item) => `
       <article class="history-item">
         <div class="history-item-head">
@@ -110,14 +138,8 @@ async function loadHistory() {
           <span>最终模型：${escapeHtml(item.final_model)}</span>
           <span class="badge ${item.fallback_used ? 'warn' : 'ok'}">${item.fallback_used ? '发生回退' : '未回退'}</span>
         </div>
-        <div class="history-block">
-          <div class="history-label">Prompt</div>
-          <div class="history-text">${escapeHtml(item.prompt)}</div>
-        </div>
-        <div class="history-block">
-          <div class="history-label">Answer</div>
-          <div class="history-text">${escapeHtml(item.answer || '')}</div>
-        </div>
+        <div class="history-block"><div class="history-label">Prompt</div><div class="history-text">${escapeHtml(item.prompt)}</div></div>
+        <div class="history-block"><div class="history-label">Answer</div><div class="history-text">${escapeHtml(item.answer || '')}</div></div>
         <div class="history-buttons">
           <button class="secondary small" data-rerun='${JSON.stringify({ prompt: item.prompt, model: item.final_model }).replaceAll("'", '&#39;')}'>一键重跑</button>
           <button class="secondary small" data-reuse-prompt='${escapeHtml(item.prompt)}'>载入 Prompt</button>
@@ -154,12 +176,10 @@ async function runPrompt() {
     metaTag.className = 'meta-tag warn';
     return;
   }
-
   answerBox.textContent = '执行中...';
   resultBox.textContent = '执行中...';
   metaTag.textContent = '请求中';
   metaTag.className = 'meta-tag';
-
   try {
     const result = await request('/api/chat', {
       method: 'POST',
@@ -172,7 +192,6 @@ async function runPrompt() {
         temperature: Number(temperatureInput.value || 0.7)
       })
     });
-
     const data = result.data || {};
     answerBox.textContent = data.answer || '模型没有返回可展示文本';
     if (data.fallbackUsed) {
@@ -196,21 +215,15 @@ saveGatewayBtn.addEventListener('click', () => {
   localStorage.setItem(storageKey, getGatewayBase());
   gatewayInfoBox.textContent = `当前网关：${getGatewayBase()}`;
 });
-
 checkBtn.addEventListener('click', async () => {
   statusBox.textContent = '检查中...';
   try {
-    const [health, whoami, providers] = await Promise.all([
-      request('/health'),
-      request('/api/whoami'),
-      request('/api/providers')
-    ]);
+    const [health, whoami, providers] = await Promise.all([request('/health'), request('/api/whoami'), request('/api/providers')]);
     statusBox.textContent = JSON.stringify({ health, whoami, providers }, null, 2);
   } catch (error) {
     statusBox.textContent = `检查失败: ${error.message}`;
   }
 });
-
 runBtn.addEventListener('click', runPrompt);
 loadHistoryBtn.addEventListener('click', loadHistory);
 copyAnswerBtn.addEventListener('click', async () => {
@@ -220,10 +233,7 @@ copyAnswerBtn.addEventListener('click', async () => {
   metaTag.textContent = '回答已复制';
   metaTag.className = 'meta-tag ok';
 });
-clearPromptBtn.addEventListener('click', () => {
-  promptInput.value = '';
-  promptInput.focus();
-});
+clearPromptBtn.addEventListener('click', () => { promptInput.value = ''; promptInput.focus(); });
 
-renderTemplates();
+loadTemplates();
 loadHistory();

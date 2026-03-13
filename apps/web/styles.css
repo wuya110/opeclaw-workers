@@ -50,3 +50,6 @@ button.small { padding: 8px 12px; font-size: 12px; }
   .row, .section-head, .history-actions, .answer-head, .history-head, .action-row, .history-item-head { flex-direction: column; align-items: flex-start; }
   .history-actions input { width: 100%; }
 }
+
+.template-manage { display: grid; gap: 10px; grid-column: 1 / -1; }
+.template-custom { display: flex; flex-direction: column; justify-content: space-between; }

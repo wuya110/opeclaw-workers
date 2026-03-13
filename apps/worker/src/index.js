@@ -38,6 +38,7 @@ async function handleProviders(env, origin) {
         entrypoint: 'https://api.yjs.de5.net',
         web: 'https://lab.yjs.de5.net',
         d1: Boolean(env.DB),
+        templates: Boolean(env.DB),
         role: '公网入口、路由、鉴权、限流、边缘执行'
       },
       huggingface: {
@@ -78,6 +79,35 @@ async function saveExperiment(env, payload) {
       JSON.stringify(payload.rawResult)
     )
     .run();
+}
+
+async function listTemplates(env, limit = 50) {
+  if (!env.DB) return [];
+
+  const result = await env.DB.prepare(`
+    SELECT id, created_at, title, content
+    FROM prompt_templates
+    ORDER BY id DESC
+    LIMIT ?
+  `).bind(limit).all();
+
+  return result.results || [];
+}
+
+async function saveTemplate(env, title, content) {
+  if (!env.DB) return null;
+
+  const result = await env.DB.prepare(`
+    INSERT INTO prompt_templates (created_at, title, content)
+    VALUES (?, ?, ?)
+  `).bind(new Date().toISOString(), title, content).run();
+
+  return result.meta?.last_row_id || null;
+}
+
+async function deleteTemplate(env, id) {
+  if (!env.DB) return;
+  await env.DB.prepare('DELETE FROM prompt_templates WHERE id = ?').bind(id).run();
 }
 
 async function listExperiments(env, limit = 20) {
@@ -227,6 +257,31 @@ export default {
       if (url.pathname === '/api/experiments' && request.method === 'GET') {
         const rows = await listExperiments(env, Number(url.searchParams.get('limit') || 20));
         return json({ ok: true, items: rows }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname === '/api/templates' && request.method === 'GET') {
+        const rows = await listTemplates(env, Number(url.searchParams.get('limit') || 50));
+        return json({ ok: true, items: rows }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname === '/api/templates' && request.method === 'POST') {
+        const body = await request.json();
+        const title = String(body?.title || '').trim();
+        const content = String(body?.content || '').trim();
+        if (!title || !content) {
+          return json({ ok: false, error: 'title 和 content 不能为空' }, 400, corsHeaders(origin));
+        }
+        const id = await saveTemplate(env, title, content);
+        return json({ ok: true, id }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname.startsWith('/api/templates/') && request.method === 'DELETE') {
+        const id = Number(url.pathname.split('/').pop());
+        if (!id) {
+          return json({ ok: false, error: '无效模板 id' }, 400, corsHeaders(origin));
+        }
+        await deleteTemplate(env, id);
+        return json({ ok: true }, 200, corsHeaders(origin));
       }
 
       return json({ ok: false, error: '路由不存在' }, 404, corsHeaders(origin));

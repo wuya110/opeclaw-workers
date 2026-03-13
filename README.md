@@ -38,6 +38,9 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - `GET /api/providers`
 - `POST /api/chat`
 - `GET /api/experiments`
+- `GET /api/templates`
+- `POST /api/templates`
+- `DELETE /api/templates/:id`
 
 ### 前端实验页
 提供一个最小实验台，用来：
@@ -64,6 +67,7 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 - [x] 前端多模型切换实验页
 - [x] 前端历史记录面板
 - [x] Prompt 模板与一键重跑
+- [x] D1 自定义模板存储
 - [ ] 请求日志与实验记录
 - [ ] R2 / KV / D1 接入
 - [ ] GitHub Actions 自动部署
