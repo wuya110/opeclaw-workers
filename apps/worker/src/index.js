@@ -209,14 +209,16 @@ async function getDashboard(env) {
     }
   }
 
-  let counts = { experiments: null, templates: null };
+  let counts = { experiments: null, templates: null, assets: null };
   if (env.DB) {
     try {
       const exp = await env.DB.prepare('SELECT COUNT(*) AS count FROM experiments').first();
       const tpl = await env.DB.prepare('SELECT COUNT(*) AS count FROM prompt_templates').first();
+      const ast = await env.DB.prepare('SELECT COUNT(*) AS count FROM text_assets').first();
       counts = {
         experiments: Number(exp?.count || 0),
-        templates: Number(tpl?.count || 0)
+        templates: Number(tpl?.count || 0),
+        assets: Number(ast?.count || 0)
       };
     } catch (error) {
       counts = { error: error instanceof Error ? error.message : String(error) };
@@ -399,6 +401,23 @@ export default {
 
       if (url.pathname === '/api/dashboard' && request.method === 'GET') {
         return json(await getDashboard(env), 200, corsHeaders(origin));
+      }
+
+      if (url.pathname === '/api/assets' && request.method === 'GET') {
+        const rows = await listTextAssets(env, Number(url.searchParams.get('limit') || 20));
+        return json({ ok: true, items: rows }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname === '/api/assets/text' && request.method === 'POST') {
+        const body = await request.json();
+        const name = String(body?.name || 'asset').trim();
+        const content = String(body?.content || '').trim();
+        const source = String(body?.source || 'manual').trim();
+        if (!content) {
+          return json({ ok: false, error: 'content 不能为空' }, 400, corsHeaders(origin));
+        }
+        const id = await saveTextAsset(env, name, content, source);
+        return json({ ok: true, id }, 200, corsHeaders(origin));
       }
 
       if (url.pathname.startsWith('/api/templates/') && request.method === 'DELETE') {
