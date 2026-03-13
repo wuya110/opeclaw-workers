@@ -26,6 +26,7 @@ const temperatureInput = document.querySelector('#temperature');
 const loadHistoryBtn = document.querySelector('#loadHistoryBtn');
 const historyLimitInput = document.querySelector('#historyLimit');
 const historySearchInput = document.querySelector('#historySearch');
+const historyTagFilter = document.querySelector('#historyTagFilter');
 const historyFallbackFilter = document.querySelector('#historyFallbackFilter');
 const historyBox = document.querySelector('#historyBox');
 const templateBox = document.querySelector('#templateBox');
@@ -378,8 +379,9 @@ async function loadHistory() {
   try {
     const limit = Number(historyLimitInput.value || 10);
     const q = encodeURIComponent(historySearchInput.value.trim());
+    const tag = encodeURIComponent(historyTagFilter.value);
     const fallback = encodeURIComponent(historyFallbackFilter.value);
-    const result = await request(`/api/experiments?limit=${limit}&q=${q}&fallback=${fallback}`);
+    const result = await request(`/api/experiments?limit=${limit}&q=${q}&tag=${tag}&fallback=${fallback}`);
     const items = result.data?.items || [];
     if (!items.length) {
       historyBox.textContent = '暂无记录';
@@ -394,6 +396,7 @@ async function loadHistory() {
         <div class="history-models">
           <span>请求模型：${escapeHtml(item.requested_model)}</span>
           <span>最终模型：${escapeHtml(item.final_model)}</span>
+          <span class="badge">标签：${escapeHtml(item.tag || '未分类')}</span>
           <span class="badge ${item.fallback_used ? 'warn' : 'ok'}">${item.fallback_used ? '发生回退' : '未回退'}</span>
         </div>
         <div class="history-block"><div class="history-label">Prompt</div><div class="history-text">${escapeHtml(item.prompt)}</div></div>
@@ -402,6 +405,7 @@ async function loadHistory() {
           <button class="secondary small" data-rerun='${JSON.stringify({ prompt: item.prompt, model: item.final_model }).replaceAll("'", '&#39;')}'>一键重跑</button>
           <button class="secondary small" data-reuse-prompt='${escapeHtml(item.prompt)}'>载入 Prompt</button>
           <button class="secondary small" data-archive-history='${JSON.stringify(item).replaceAll("'", '&#39;')}'>归档到资产区</button>
+          <button class="secondary small" data-tag-history='${JSON.stringify({ id: item.id, tag: item.tag || '未分类' }).replaceAll("'", '&#39;')}'>改标签</button>
         </div>
       </article>
     `).join('');
@@ -426,6 +430,20 @@ async function loadHistory() {
       button.addEventListener('click', async () => {
         const payload = JSON.parse(button.getAttribute('data-archive-history'));
         await archiveHistoryItemAsAsset(payload);
+      });
+    });
+
+    historyBox.querySelectorAll('[data-tag-history]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const payload = JSON.parse(button.getAttribute('data-tag-history'));
+        const nextTag = window.prompt('实验标签', payload.tag || '未分类');
+        if (nextTag === null) return;
+        await request(`/api/experiments/${payload.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tag: nextTag })
+        });
+        await loadHistory();
       });
     });
   } catch (error) {
@@ -498,6 +516,7 @@ checkBtn.addEventListener('click', async () => {
 runBtn.addEventListener('click', runPrompt);
 loadHistoryBtn.addEventListener('click', loadHistory);
 historySearchInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') loadHistory(); });
+historyTagFilter.addEventListener('change', loadHistory);
 historyFallbackFilter.addEventListener('change', loadHistory);
 loadAssetsBtn.addEventListener('click', loadAssets);
 saveAnswerAssetBtn.addEventListener('click', saveCurrentAnswerAsAsset);

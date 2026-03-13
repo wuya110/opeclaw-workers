@@ -55,8 +55,20 @@ async function handleProviders(env, origin) {
   }, 200, corsHeaders(origin));
 }
 
+function detectExperimentTag(prompt = '') {
+  const text = String(prompt).toLowerCase();
+  if (/代码|code|bug|报错|异常|脚本|接口|api|debug/.test(text)) return '代码';
+  if (/文案|标题|卖点|运营|推广|广告/.test(text)) return '运营';
+  if (/总结|分析|整理|提炼|结构化|归纳/.test(text)) return '分析';
+  if (/改写|润色|写作|文章|小红书|公众号/.test(text)) return '写作';
+  if (/排查|故障|修复|定位/.test(text)) return '排障';
+  return '未分类';
+}
+
 async function saveExperiment(env, payload) {
   if (!env.DB) return;
+
+  const tag = payload.tag || detectExperimentTag(payload.prompt);
 
   await env.DB.prepare(`
     INSERT INTO experiments (
@@ -66,8 +78,9 @@ async function saveExperiment(env, payload) {
       final_model,
       fallback_used,
       answer,
-      raw_result
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      raw_result,
+      tag
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `)
     .bind(
       new Date().toISOString(),
@@ -76,7 +89,8 @@ async function saveExperiment(env, payload) {
       payload.finalModel,
       payload.fallbackUsed ? 1 : 0,
       payload.answer,
-      JSON.stringify(payload.rawResult)
+      JSON.stringify(payload.rawResult),
+      tag
     )
     .run();
 }
@@ -117,6 +131,11 @@ async function updateTemplateMeta(env, id, category, isFavorite) {
 async function deleteTemplate(env, id) {
   if (!env.DB) return;
   await env.DB.prepare('DELETE FROM prompt_templates WHERE id = ?').bind(id).run();
+}
+
+async function updateExperimentTag(env, id, tag) {
+  if (!env.DB) return;
+  await env.DB.prepare('UPDATE experiments SET tag = ? WHERE id = ?').bind(tag, id).run();
 }
 
 async function listTextAssets(env, options = {}) {
@@ -287,9 +306,10 @@ async function listExperiments(env, options = {}) {
   const limit = Number(options.limit || 20);
   const q = String(options.q || '').trim();
   const fallback = String(options.fallback || '').trim();
+  const tag = String(options.tag || '').trim();
 
   let sql = `
-    SELECT id, created_at, prompt, requested_model, final_model, fallback_used, answer
+    SELECT id, created_at, prompt, requested_model, final_model, fallback_used, answer, COALESCE(tag, '未分类') AS tag
     FROM experiments
     WHERE 1 = 1
   `;
@@ -299,6 +319,11 @@ async function listExperiments(env, options = {}) {
     sql += ' AND (prompt LIKE ? OR answer LIKE ? OR requested_model LIKE ? OR final_model LIKE ?)';
     const like = `%${q}%`;
     binds.push(like, like, like, like);
+  }
+
+  if (tag) {
+    sql += ' AND tag = ?';
+    binds.push(tag);
   }
 
   if (fallback === 'true') {
@@ -449,7 +474,8 @@ export default {
         const rows = await listExperiments(env, {
           limit: Number(url.searchParams.get('limit') || 20),
           q: url.searchParams.get('q') || '',
-          fallback: url.searchParams.get('fallback') || ''
+          fallback: url.searchParams.get('fallback') || '',
+          tag: url.searchParams.get('tag') || ''
         });
         return json({ ok: true, items: rows }, 200, corsHeaders(origin));
       }
@@ -486,6 +512,17 @@ export default {
 
       if (url.pathname === '/api/dashboard' && request.method === 'GET') {
         return json(await getDashboard(env), 200, corsHeaders(origin));
+      }
+
+      if (url.pathname.startsWith('/api/experiments/') && request.method === 'PATCH') {
+        const id = Number(url.pathname.split('/').pop());
+        if (!id) {
+          return json({ ok: false, error: '无效实验 id' }, 400, corsHeaders(origin));
+        }
+        const body = await request.json();
+        const tag = String(body?.tag || '未分类').trim() || '未分类';
+        await updateExperimentTag(env, id, tag);
+        return json({ ok: true }, 200, corsHeaders(origin));
       }
 
       if (url.pathname === '/api/assets' && request.method === 'GET') {

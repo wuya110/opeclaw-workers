@@ -74,3 +74,5 @@ button.small { padding: 8px 12px; font-size: 12px; }
 #templateCategoryFilter, #templateFavoriteFilter, #historyFallbackFilter { min-width: 120px; }
 
 #assetSearch, #assetSourceFilter { min-width: 180px; }
+
+#historyTagFilter { min-width: 120px; }

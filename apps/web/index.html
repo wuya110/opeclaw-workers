@@ -129,6 +129,15 @@
           <h2>实验记录</h2>
           <div class="inline-actions">
             <input id="historySearch" placeholder="搜索 prompt / answer / 模型" />
+            <select id="historyTagFilter">
+              <option value="">全部标签</option>
+              <option value="分析">分析</option>
+              <option value="写作">写作</option>
+              <option value="代码">代码</option>
+              <option value="排障">排障</option>
+              <option value="运营">运营</option>
+              <option value="未分类">未分类</option>
+            </select>
             <select id="historyFallbackFilter">
               <option value="">全部</option>
               <option value="true">只看回退</option>

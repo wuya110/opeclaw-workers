@@ -25,3 +25,6 @@ CREATE TABLE IF NOT EXISTS text_assets (
   content TEXT NOT NULL,
   source TEXT NOT NULL DEFAULT 'manual'
 );
+
+
+-- 旧库通过 API 补 experiments.tag 列
