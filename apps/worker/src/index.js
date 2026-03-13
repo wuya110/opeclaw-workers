@@ -23,7 +23,9 @@ async function handleWhoAmI(env, origin) {
       huggingface: Boolean(env.HF_TOKEN),
       github: Boolean(env.GITHUB_TOKEN)
     },
-    gateway: 'api.yjs.de5.net'
+    gateway: 'api.yjs.de5.net',
+    defaultModel: env.HF_MODEL,
+    fallbackModel: env.HF_FALLBACK_MODEL || 'meta-llama/Llama-3.3-70B-Instruct'
   }, 200, corsHeaders(origin));
 }
 
@@ -34,11 +36,13 @@ async function handleProviders(env, origin) {
       cloudflare: {
         enabled: true,
         entrypoint: 'https://api.yjs.de5.net',
+        web: 'https://lab.yjs.de5.net',
         role: '公网入口、路由、鉴权、限流、边缘执行'
       },
       huggingface: {
         enabled: Boolean(env.HF_TOKEN),
         defaultModel: env.HF_MODEL,
+        fallbackModel: env.HF_FALLBACK_MODEL || 'meta-llama/Llama-3.3-70B-Instruct',
         role: '模型推理与实验能力'
       },
       github: {
@@ -49,12 +53,39 @@ async function handleProviders(env, origin) {
   }, 200, corsHeaders(origin));
 }
 
+async function callHfChat(env, model, prompt, maxTokens, temperature) {
+  const upstream = await fetch('https://router.huggingface.co/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.HF_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: maxTokens,
+      temperature
+    })
+  });
+
+  const raw = await upstream.text();
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = raw;
+  }
+
+  const answer = parsed && Array.isArray(parsed.choices) && parsed.choices[0]?.message
+    ? (parsed.choices[0].message.content || '')
+    : '';
+
+  return { upstream, parsed, answer };
+}
+
 async function handleChat(request, env, origin) {
   if (!env.HF_TOKEN) {
-    return json({
-      ok: false,
-      error: 'HF_TOKEN 未配置'
-    }, 500, corsHeaders(origin));
+    return json({ ok: false, error: 'HF_TOKEN 未配置' }, 500, corsHeaders(origin));
   }
 
   let body;
@@ -70,47 +101,33 @@ async function handleChat(request, env, origin) {
   }
 
   const model = String(body?.model || env.HF_MODEL || 'Qwen/Qwen2.5-72B-Instruct');
+  const fallbackModel = String(body?.fallback_model || env.HF_FALLBACK_MODEL || 'meta-llama/Llama-3.3-70B-Instruct');
   const maxTokens = Number(body?.max_tokens || body?.max_new_tokens || 256);
   const temperature = Number(body?.temperature || 0.7);
 
-  const upstream = await fetch('https://router.huggingface.co/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.HF_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+  const primary = await callHfChat(env, model, prompt, maxTokens, temperature);
+  const primaryOk = primary.upstream.ok && primary.answer.trim();
+
+  if (primaryOk || model === fallbackModel) {
+    return json({
+      ok: primary.upstream.ok,
       model,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      max_tokens: maxTokens,
-      temperature
-    })
-  });
-
-  const raw = await upstream.text();
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    parsed = raw;
+      fallbackUsed: false,
+      answer: primary.answer,
+      result: primary.parsed
+    }, primary.upstream.ok ? 200 : primary.upstream.status, corsHeaders(origin));
   }
 
-  let answer = null;
-  if (parsed && Array.isArray(parsed.choices) && parsed.choices[0]?.message) {
-    answer = parsed.choices[0].message.content || '';
-  }
-
+  const fallback = await callHfChat(env, fallbackModel, prompt, maxTokens, temperature);
   return json({
-    ok: upstream.ok,
-    model,
-    answer,
-    result: parsed
-  }, upstream.ok ? 200 : upstream.status, corsHeaders(origin));
+    ok: fallback.upstream.ok,
+    model: fallbackModel,
+    fallbackUsed: true,
+    primaryModel: model,
+    answer: fallback.answer,
+    primaryResult: primary.parsed,
+    result: fallback.parsed
+  }, fallback.upstream.ok ? 200 : fallback.upstream.status, corsHeaders(origin));
 }
 
 export default {
@@ -129,6 +146,7 @@ export default {
           ok: true,
           service: 'opeclaw-workers-gateway',
           gateway: 'https://api.yjs.de5.net',
+          web: 'https://lab.yjs.de5.net',
           time: new Date().toISOString()
         }, 200, corsHeaders(origin));
       }
@@ -147,10 +165,7 @@ export default {
 
       return json({ ok: false, error: '路由不存在' }, 404, corsHeaders(origin));
     } catch (error) {
-      return json({
-        ok: false,
-        error: error instanceof Error ? error.message : String(error)
-      }, 500, corsHeaders(origin));
+      return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 500, corsHeaders(origin));
     }
   }
 };

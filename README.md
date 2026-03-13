@@ -105,3 +105,9 @@ wrangler secret put GITHUB_TOKEN
 - 个人实验控制台
 - 自动化内容处理流水线
 - OpenClaw 可调用的能力底座
+
+
+## 当前在线入口
+
+- 前端：`https://lab.yjs.de5.net`
+- API：`https://api.yjs.de5.net`

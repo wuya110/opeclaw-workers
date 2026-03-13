@@ -7,6 +7,7 @@ workers_dev = true
 APP_NAME = "院生 AI 实验站"
 ALLOW_ORIGIN = "*"
 HF_MODEL = "Qwen/Qwen2.5-72B-Instruct"
+HF_FALLBACK_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
 
 [observability.logs]
 enabled = true
