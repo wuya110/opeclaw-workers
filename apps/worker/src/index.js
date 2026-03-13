@@ -104,33 +104,44 @@ async function handleChat(request, env) {
 }
 
 async function handleRequest(request, env) {
-  const url = new URL(request.url);
+  const allowOrigin = env?.ALLOW_ORIGIN || '*';
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders(env.ALLOW_ORIGIN) });
-  }
+  try {
+    const url = new URL(request.url);
 
-  if (url.pathname === '/' || url.pathname === '/health') {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders(allowOrigin) });
+    }
+
+    if (url.pathname === '/' || url.pathname === '/health') {
+      return json({
+        ok: true,
+        service: 'opeclaw-workers-gateway',
+        time: new Date().toISOString(),
+        version: 'v0.1.1'
+      }, 200, corsHeaders(allowOrigin));
+    }
+
+    if (url.pathname === '/api/whoami' && request.method === 'GET') {
+      return handleWhoAmI(env);
+    }
+
+    if (url.pathname === '/api/providers' && request.method === 'GET') {
+      return handleProviders(env);
+    }
+
+    if (url.pathname === '/api/chat' && request.method === 'POST') {
+      return handleChat(request, env);
+    }
+
+    return json({ ok: false, error: '路由不存在' }, 404, corsHeaders(allowOrigin));
+  } catch (error) {
     return json({
-      ok: true,
-      service: 'opeclaw-workers-gateway',
-      time: new Date().toISOString()
-    }, 200, corsHeaders(env.ALLOW_ORIGIN));
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : null
+    }, 500, corsHeaders(allowOrigin));
   }
-
-  if (url.pathname === '/api/whoami' && request.method === 'GET') {
-    return handleWhoAmI(env);
-  }
-
-  if (url.pathname === '/api/providers' && request.method === 'GET') {
-    return handleProviders(env);
-  }
-
-  if (url.pathname === '/api/chat' && request.method === 'POST') {
-    return handleChat(request, env);
-  }
-
-  return json({ ok: false, error: '路由不存在' }, 404, corsHeaders(env.ALLOW_ORIGIN));
 }
 
 export default {
