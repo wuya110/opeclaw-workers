@@ -110,6 +110,26 @@ async function deleteTemplate(env, id) {
   await env.DB.prepare('DELETE FROM prompt_templates WHERE id = ?').bind(id).run();
 }
 
+async function listTextAssets(env, limit = 20) {
+  if (!env.DB) return [];
+  const result = await env.DB.prepare(`
+    SELECT id, created_at, name, content, source
+    FROM text_assets
+    ORDER BY id DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return result.results || [];
+}
+
+async function saveTextAsset(env, name, content, source = 'manual') {
+  if (!env.DB) return null;
+  const result = await env.DB.prepare(`
+    INSERT INTO text_assets (created_at, name, content, source)
+    VALUES (?, ?, ?, ?)
+  `).bind(new Date().toISOString(), name, content, source).run();
+  return result.meta?.last_row_id || null;
+}
+
 async function getDashboard(env) {
   const cloudflare = {
     gateway: 'https://api.yjs.de5.net',

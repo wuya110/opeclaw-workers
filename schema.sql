@@ -16,3 +16,12 @@ CREATE TABLE IF NOT EXISTS prompt_templates (
   title TEXT NOT NULL,
   content TEXT NOT NULL
 );
+
+
+CREATE TABLE IF NOT EXISTS text_assets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL,
+  name TEXT NOT NULL,
+  content TEXT NOT NULL,
+  source TEXT NOT NULL DEFAULT 'manual'
+);
