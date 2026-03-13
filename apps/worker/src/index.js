@@ -130,6 +130,15 @@ async function saveTextAsset(env, name, content, source = 'manual') {
   return result.meta?.last_row_id || null;
 }
 
+async function getTextAsset(env, id) {
+  if (!env.DB) return null;
+  return await env.DB.prepare(`
+    SELECT id, created_at, name, content, source
+    FROM text_assets
+    WHERE id = ?
+  `).bind(id).first();
+}
+
 async function getDashboard(env) {
   const cloudflare = {
     gateway: 'https://api.yjs.de5.net',
@@ -418,6 +427,18 @@ export default {
         }
         const id = await saveTextAsset(env, name, content, source);
         return json({ ok: true, id }, 200, corsHeaders(origin));
+      }
+
+      if (url.pathname.startsWith('/api/assets/') && request.method === 'GET') {
+        const id = Number(url.pathname.split('/').pop());
+        if (!id) {
+          return json({ ok: false, error: '无效资产 id' }, 400, corsHeaders(origin));
+        }
+        const item = await getTextAsset(env, id);
+        if (!item) {
+          return json({ ok: false, error: '资产不存在' }, 404, corsHeaders(origin));
+        }
+        return json({ ok: true, item }, 200, corsHeaders(origin));
       }
 
       if (url.pathname.startsWith('/api/templates/') && request.method === 'DELETE') {
