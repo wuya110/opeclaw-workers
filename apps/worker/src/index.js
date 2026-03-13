@@ -118,7 +118,7 @@ async function getDashboard(env) {
   };
 
   const githubToken = typeof env.GITHUB_TOKEN === 'string' ? env.GITHUB_TOKEN.trim() : '';
-  let github = { enabled: Boolean(githubToken) };
+  let github = { enabled: false, source: githubToken ? 'token' : 'public-fallback' };
   if (githubToken) {
     try {
       const response = await fetch('https://api.github.com/user', {
@@ -128,14 +128,44 @@ async function getDashboard(env) {
         }
       });
       const data = await response.json();
-      github = {
-        enabled: response.ok,
-        login: data.login || null,
-        name: data.name || null,
-        public_repos: data.public_repos ?? null
-      };
+      if (response.ok) {
+        github = {
+          enabled: true,
+          source: 'token',
+          login: data.login || null,
+          name: data.name || null,
+          public_repos: data.public_repos ?? null
+        };
+      } else {
+        github = {
+          enabled: false,
+          source: 'token',
+          auth_error: data.message || 'GitHub token unavailable'
+        };
+      }
     } catch (error) {
-      github = { enabled: false, error: error instanceof Error ? error.message : String(error) };
+      github = { enabled: false, source: 'token', error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  if (!github.enabled) {
+    try {
+      const response = await fetch('https://api.github.com/users/wuya110', {
+        headers: { 'User-Agent': 'opeclaw-workers' }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        github = {
+          enabled: true,
+          source: github.source === 'token' ? 'public-fallback-after-token-failure' : 'public-fallback',
+          login: data.login || 'wuya110',
+          name: data.name || null,
+          public_repos: data.public_repos ?? null,
+          profile: data.html_url || null
+        };
+      }
+    } catch (error) {
+      github.error = error instanceof Error ? error.message : String(error);
     }
   }
 
