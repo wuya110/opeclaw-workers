@@ -12,6 +12,9 @@ const modelSelect = document.querySelector('#model');
 const fallbackModelSelect = document.querySelector('#fallbackModel');
 const maxTokensInput = document.querySelector('#maxTokens');
 const temperatureInput = document.querySelector('#temperature');
+const loadHistoryBtn = document.querySelector('#loadHistoryBtn');
+const historyLimitInput = document.querySelector('#historyLimit');
+const historyBox = document.querySelector('#historyBox');
 
 const storageKey = 'opeclaw.gatewayBase';
 const defaultGateway = 'https://api.yjs.de5.net';
@@ -27,6 +30,53 @@ async function request(path, options = {}) {
   const response = await fetch(`${getGatewayBase()}${path}`, options);
   const data = await response.json();
   return { status: response.status, data };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+async function loadHistory() {
+  historyBox.textContent = '加载中...';
+  try {
+    const limit = Number(historyLimitInput.value || 10);
+    const result = await request(`/api/experiments?limit=${limit}`);
+    const items = result.data?.items || [];
+
+    if (!items.length) {
+      historyBox.textContent = '暂无记录';
+      return;
+    }
+
+    historyBox.innerHTML = items.map((item) => `
+      <article class="history-item">
+        <div class="history-item-head">
+          <span class="history-id">#${item.id}</span>
+          <span class="history-time">${escapeHtml(item.created_at)}</span>
+        </div>
+        <div class="history-models">
+          <span>请求模型：${escapeHtml(item.requested_model)}</span>
+          <span>最终模型：${escapeHtml(item.final_model)}</span>
+          <span class="badge ${item.fallback_used ? 'warn' : 'ok'}">${item.fallback_used ? '发生回退' : '未回退'}</span>
+        </div>
+        <div class="history-block">
+          <div class="history-label">Prompt</div>
+          <div class="history-text">${escapeHtml(item.prompt)}</div>
+        </div>
+        <div class="history-block">
+          <div class="history-label">Answer</div>
+          <div class="history-text">${escapeHtml(item.answer || '')}</div>
+        </div>
+      </article>
+    `).join('');
+  } catch (error) {
+    historyBox.textContent = `加载失败：${error.message}`;
+  }
 }
 
 saveGatewayBtn.addEventListener('click', () => {
@@ -86,6 +136,7 @@ runBtn.addEventListener('click', async () => {
       metaTag.className = 'meta-tag ok';
     }
     resultBox.textContent = JSON.stringify(result, null, 2);
+    await loadHistory();
   } catch (error) {
     answerBox.textContent = `调用失败：${error.message}`;
     resultBox.textContent = `调用失败：${error.message}`;
@@ -93,3 +144,6 @@ runBtn.addEventListener('click', async () => {
     metaTag.className = 'meta-tag danger';
   }
 });
+
+loadHistoryBtn.addEventListener('click', loadHistory);
+loadHistory();

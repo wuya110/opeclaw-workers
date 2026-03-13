@@ -10,7 +10,6 @@
   --warn: #ffcf5a;
   --danger: #ff6b81;
 }
-
 * { box-sizing: border-box; }
 body {
   margin: 0;
@@ -67,22 +66,20 @@ button:hover { filter: brightness(1.08); }
   border-radius: 14px;
   background: #0d1427;
 }
-.answer-head {
+.answer-head, .history-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
 }
-.answer-head h3 {
-  margin: 0;
-}
+.answer-head h3, .history-head h2 { margin: 0; }
 .answer-box {
   white-space: pre-wrap;
   line-height: 1.7;
   min-height: 80px;
 }
-.meta-tag {
+.meta-tag, .badge {
   display: inline-block;
   padding: 6px 10px;
   border-radius: 999px;
@@ -90,12 +87,52 @@ button:hover { filter: brightness(1.08); }
   background: rgba(120,166,255,.15);
   color: var(--accent);
 }
-.meta-tag.ok { background: rgba(87,211,140,.14); color: var(--ok); }
-.meta-tag.warn { background: rgba(255,207,90,.14); color: var(--warn); }
+.meta-tag.ok, .badge.ok { background: rgba(87,211,140,.14); color: var(--ok); }
+.meta-tag.warn, .badge.warn { background: rgba(255,207,90,.14); color: var(--warn); }
 .meta-tag.danger { background: rgba(255,107,129,.14); color: var(--danger); }
 .raw-panel { margin-top: 16px; }
 .raw-panel summary { cursor: pointer; color: var(--sub); }
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.history-actions input {
+  width: 100px;
+}
+.history-box {
+  display: grid;
+  gap: 14px;
+}
+.history-item {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #0d1427;
+  padding: 14px;
+}
+.history-item-head, .history-models {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.history-item-head {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.history-id { font-weight: 700; }
+.history-time, .history-models { color: var(--sub); font-size: 14px; }
+.history-block { margin-top: 12px; }
+.history-label {
+  color: var(--sub);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.history-text {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
 @media (max-width: 720px) {
-  .row { flex-direction: column; gap: 0; }
-  .answer-head { flex-direction: column; align-items: flex-start; }
+  .row, .history-actions, .answer-head, .history-head { flex-direction: column; align-items: flex-start; }
+  .history-actions input { width: 100%; }
 }

@@ -62,6 +62,7 @@ OpenClaw / Cloudflare / Hugging Face / GitHub 联动实验仓库。
 ### 第二阶段：做成可持续扩展平台
 - [x] D1 实验记录存储
 - [x] 前端多模型切换实验页
+- [x] 前端历史记录面板
 - [ ] 请求日志与实验记录
 - [ ] R2 / KV / D1 接入
 - [ ] GitHub Actions 自动部署
