@@ -128,3 +128,45 @@ wrangler secret put GITHUB_TOKEN
 - Worker 部署使用：`wrangler.toml`
 - Pages 部署使用：`apps/web/wrangler.toml`
 - 推荐命令：`cd apps/web && wrangler pages deploy . --project-name opeclaw-workers-web`
+
+
+## v1 使用说明
+
+### 入口
+- 工作台：`https://lab.yjs.de5.net`
+- API：`https://api.yjs.de5.net`
+
+### 核心流程
+1. 在「文本实验」输入 prompt 运行模型
+2. 在「回答区」查看结果与原始 JSON
+3. 在「实验记录」里搜索、筛选、改标签、归档
+4. 在「资产区」保存结果、搜索资产、查看详情、再投喂
+5. 在「标签联动视图」按业务标签统一查看模板 / 实验 / 资产
+
+### 推荐使用方式
+- 日常写作：先选模板，再跑实验，再把优质结果存为资产
+- 运营文案：用“运营”标签串模板、实验记录、资产
+- 排障记录：把高价值排查过程归档到资产区，方便复用
+
+## 部署命令
+
+### Worker
+```bash
+wrangler deploy
+```
+
+### Pages
+```bash
+cd apps/web && wrangler pages deploy . --project-name opeclaw-workers-web
+```
+
+## v1 完成范围
+- 多模型实验入口
+- Hugging Face 路由与 fallback
+- D1 实验记录
+- 模板库：新建 / 编辑 / 分类 / 收藏 / 搜索
+- 资产区：保存 / 搜索 / 来源筛选 / 标签 / 详情 / 再投喂
+- 实验记录：搜索 / fallback 筛选 / 标签筛选 / 手动改标签
+- 标签联动视图
+- 工作台首页重构
+- Worker / Pages 部署链路收口
